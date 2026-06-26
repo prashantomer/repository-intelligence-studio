@@ -1,0 +1,43 @@
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Local tool state
+.ruby-lsp/
+.code-review-graph/
+
+# Secrets / env
+.env
+.env.*
+!.env.example
+config/master.key
+
+# Bundler / Ruby
+/.bundle
+/vendor/bundle
+
+# Logs and runtime state
+/log/*
+!/log/.keep
+/tmp/*
+!/tmp/.keep
+!/tmp/pids/
+/tmp/pids/*
+!/tmp/pids/.keep
+/tmp/cache/
+/tmp/storage/
+/tmp/repositories/
+
+# Uploaded/local storage
+/storage/*
+!/storage/.keep
+
+# Test / coverage artifacts
+/coverage/
+/spec/reports/
+
+# Generated assets / misc local files
+/public/assets
+/public/packs
+/node_modules/
