@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for(:title) || "Engineering Knowledge Assistant" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Engineering Knowledge Assistant">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= action_cable_meta_tag %>
+
+    <%= yield :head %>
+
+    <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
+    <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%# Includes all stylesheet files in app/assets/stylesheets %>
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body>
+    <div class="app-frame">
+      <aside class="app-sidebar">
+        <div class="sidebar-brand">
+          <span class="brand-mark">Engineering Knowledge Assistant</span>
+          <span class="brand-copy">Ingestion, retrieval, and grounded repository answers.</span>
+        </div>
+
+        <nav class="sidebar-nav">
+          <div class="sidebar-nav-group">
+            <span class="sidebar-nav-label">Workspace</span>
+            <%= link_to repositories_path, class: "sidebar-link #{'is-active' if current_page?(repositories_path)}" do %>
+              <span class="sidebar-link-title">Repositories</span>
+              <span class="sidebar-link-copy">Manage tracked repositories</span>
+            <% end %>
+
+            <%= link_to edit_settings_path, class: "sidebar-link #{'is-active' if current_page?(edit_settings_path)}" do %>
+              <span class="sidebar-link-title">AI Settings</span>
+              <span class="sidebar-link-copy">Providers, models, and retrieval defaults</span>
+            <% end %>
+          </div>
+
+          <% if defined?(@repository) && @repository.present? %>
+            <div class="sidebar-nav-group">
+              <span class="sidebar-nav-label">Current Repository</span>
+              <%= link_to repository_path(@repository), class: "sidebar-link #{'is-active' if current_page?(repository_path(@repository))}" do %>
+                <span class="sidebar-link-title"><%= @repository.name %></span>
+                <span class="sidebar-link-copy">Overview and ingestion status</span>
+              <% end %>
+
+              <%= link_to assistant_repository_path(@repository), class: "sidebar-link #{'is-active' if current_page?(assistant_repository_path(@repository))}" do %>
+                <span class="sidebar-link-title">Assistant</span>
+                <span class="sidebar-link-copy">Repository-scoped chat and answers</span>
+              <% end %>
+
+              <%= link_to search_repository_path(@repository), class: "sidebar-link #{'is-active' if current_page?(search_repository_path(@repository))}" do %>
+                <span class="sidebar-link-title">Search Chunks</span>
+                <span class="sidebar-link-copy">Inspect retrieval and semantic matches</span>
+              <% end %>
+            </div>
+          <% end %>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="sidebar-user-card">
+            <span class="sidebar-nav-label">Current User</span>
+            <strong><%= current_user.name %></strong>
+            <span class="sidebar-user-copy"><%= current_user.assistant_provider.humanize %> assistant · <%= current_user.embedding_provider.humanize %> embeddings</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="app-shell">
+        <header class="app-topbar">
+          <div class="topbar-copy">
+            <span class="topbar-eyebrow">Workspace</span>
+            <h1><%= content_for?(:title) ? yield(:title) : "Engineering Knowledge Assistant" %></h1>
+            <p class="brand-copy">Repository intelligence in a single operational workspace.</p>
+          </div>
+
+          <div class="topbar-actions">
+            <%= link_to "Add Repository", new_repository_path, class: "button button-primary" %>
+            <%= link_to "Repositories", repositories_path, class: "button button-secondary" unless current_page?(repositories_path) %>
+          </div>
+        </header>
+
+        <div class="app-content-shell">
+          <%= render "shared/flash" %>
+          <%= yield %>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
