@@ -1,0 +1,60 @@
+<article id="<%= dom_id(message) %>" class="assistant-bubble assistant-bubble-<%= message.role %>">
+  <div class="assistant-bubble-avatar">
+    <span><%= message.user? ? "You" : "AI" %></span>
+  </div>
+
+  <div class="assistant-bubble-card <%= "assistant-bubble-card-pending" if message.pending_response? %> <%= "assistant-bubble-card-failed" if message.failed_response? %>">
+    <div class="assistant-bubble-header">
+      <div>
+        <strong><%= message.user? ? "You" : "Assistant" %></strong>
+        <span class="assistant-bubble-subtitle">
+          <% if message.user? %>
+            Question
+          <% elsif message.pending_response? %>
+            <span class="assistant-typing-inline">
+              <span class="assistant-typing-dot"></span>
+              <span class="assistant-typing-dot"></span>
+              <span class="assistant-typing-dot"></span>
+              Thinking
+            </span>
+          <% elsif message.failed_response? %>
+            Response failed
+          <% else %>
+            <%= "#{repository.assistant_provider.humanize} · #{repository.assistant_model}" %>
+          <% end %>
+        </span>
+      </div>
+      <span class="status-pill"><%= message.created_at.strftime("%b %d · %H:%M") %></span>
+    </div>
+
+    <div class="assistant-bubble-body">
+      <div class="assistant-rich-text">
+        <% if message.pending_response? %>
+          <div class="assistant-typing-block">
+            <div class="assistant-typing-line assistant-typing-line-lg"></div>
+            <div class="assistant-typing-line"></div>
+            <div class="assistant-typing-line assistant-typing-line-sm"></div>
+          </div>
+        <% else %>
+          <%= simple_format(message.content) %>
+        <% end %>
+      </div>
+
+      <% if message.assistant? && message.citations.any? && !message.pending_response? %>
+        <div class="assistant-citations">
+          <div class="assistant-citations-title">Grounding citations</div>
+          <div class="citation-list">
+            <% message.citations.each do |citation| %>
+              <div class="citation-item">
+                <span class="timeline-title"><%= citation["path"] %>:<%= citation["start_line"] %>-<%= citation["end_line"] %></span>
+                <% if citation["entity_name"].present? %>
+                  <span class="timeline-meta"><%= citation["entity_name"] %></span>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</article>

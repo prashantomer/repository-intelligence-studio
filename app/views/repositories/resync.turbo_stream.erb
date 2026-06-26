@@ -1,0 +1,14 @@
+<%= turbo_stream.replace "repository-show-content" do %>
+  <%= render "repositories/show_content",
+             repository: @repository,
+             latest_ingestion: @latest_ingestion,
+             recent_ingestions: @recent_ingestions,
+             recent_audit_logs: @recent_audit_logs,
+             code_files_count: @code_files_count,
+             code_chunks_count: @code_chunks_count,
+             entities_count: @entities_count,
+             routes_count: @routes_count,
+             relationships_count: @relationships_count %>
+<% end %>
+
+<%= turbo_stream.replace "flash-stack", partial: "shared/flash" %>

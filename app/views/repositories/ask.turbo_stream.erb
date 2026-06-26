@@ -1,0 +1,30 @@
+<%= turbo_stream.replace "assistant-chat-body" do %>
+  <%= render "repositories/assistant/chat_body", repository: @repository, messages: @messages %>
+<% end %>
+
+<%= turbo_stream.replace "assistant-composer" do %>
+  <%= render "repositories/assistant/composer", repository: @repository, conversation: @conversation %>
+<% end %>
+
+<%= turbo_stream.replace "assistant-thread-status" do %>
+  <div class="assistant-chat-meta" id="assistant-thread-status">
+    <span class="status-pill">Active thread</span>
+  </div>
+<% end %>
+
+<%= turbo_stream.replace "assistant-session-stats" do %>
+  <div class="assistant-stats" id="assistant-session-stats">
+    <article class="assistant-stat">
+      <span class="assistant-stat-label">Messages</span>
+      <span class="assistant-stat-value"><%= @messages.count %></span>
+    </article>
+    <article class="assistant-stat">
+      <span class="assistant-stat-label">Repository</span>
+      <span class="assistant-stat-value"><%= @repository.name %></span>
+    </article>
+    <article class="assistant-stat">
+      <span class="assistant-stat-label">Scope</span>
+      <span class="assistant-stat-value"><%= @repository.tracked_branch %></span>
+    </article>
+  </div>
+<% end %>

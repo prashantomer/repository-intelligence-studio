@@ -1,0 +1,15 @@
+<% content_for :title, "Edit Repository" %>
+
+<div class="page narrow-page">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Repository Setup</p>
+      <h1>Edit Repository</h1>
+      <p class="page-copy">Update repository tracking and AI provider settings.</p>
+    </div>
+  </div>
+
+  <section class="card">
+    <%= render "form", repository: @repository %>
+  </section>
+</div>

@@ -1,0 +1,224 @@
+<div id="repository-show-content" class="page">
+  <section class="hero-card">
+    <div class="page-header">
+      <div>
+        <p class="eyebrow">Repository</p>
+        <h1><%= repository.name %></h1>
+        <p class="page-copy"><%= repository.github_url %></p>
+        <div class="meta-inline">
+          <span>Status: <%= repository.status.humanize %></span>
+          <span>Tracked branch: <%= repository.tracked_branch %></span>
+          <span>Assistant: <%= repository.assistant_provider %></span>
+          <span>Embeddings: <%= repository.embedding_provider %></span>
+        </div>
+      </div>
+
+      <div class="hero-actions">
+        <%= link_to "Back to Repositories", repositories_path, class: "button button-secondary" %>
+        <%= link_to "Edit Repository", edit_repository_path(repository), class: "button button-secondary" %>
+        <%= link_to "AI Settings", edit_settings_path, class: "button button-secondary" %>
+        <%= link_to "Assistant", assistant_repository_path(repository), class: "button button-secondary" %>
+        <%= link_to "Search Chunks", search_repository_path(repository), class: "button button-secondary" %>
+        <%= button_to "Force Re-sync", resync_repository_path(repository), method: :post, class: "button button-primary" %>
+      </div>
+    </div>
+
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-value"><%= code_files_count %></div>
+        <span class="hero-stat-label">Files</span>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value"><%= code_chunks_count %></div>
+        <span class="hero-stat-label">Chunks</span>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value"><%= entities_count %></div>
+        <span class="hero-stat-label">Entities</span>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value"><%= relationships_count %></div>
+        <span class="hero-stat-label">Relationships</span>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value"><%= routes_count %></div>
+        <span class="hero-stat-label">Routes</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="summary-grid">
+    <section class="card card-muted">
+      <div class="section-title">
+        <div>
+          <h2>Assistant</h2>
+          <p class="page-copy">Inherited from centralized user settings.</p>
+        </div>
+        <%= link_to "Manage", edit_settings_path, class: "button button-secondary" %>
+      </div>
+
+      <dl class="meta-grid">
+        <div>
+          <dt>Provider</dt>
+          <dd><%= repository.assistant_provider %></dd>
+        </div>
+        <div>
+          <dt>Model</dt>
+          <dd><%= repository.assistant_model %></dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="card card-muted">
+      <div class="section-title">
+        <div>
+          <h2>Embeddings</h2>
+          <p class="page-copy">Inherited from centralized user settings.</p>
+        </div>
+        <%= link_to "Manage", edit_settings_path, class: "button button-secondary" %>
+      </div>
+
+      <dl class="meta-grid">
+        <div>
+          <dt>Provider</dt>
+          <dd><%= repository.embedding_provider %></dd>
+        </div>
+        <div>
+          <dt>Model</dt>
+          <dd><%= repository.embedding_model %></dd>
+        </div>
+        <div>
+          <dt>Ollama endpoint</dt>
+          <dd><%= repository.ollama_base_url %></dd>
+        </div>
+      </dl>
+    </section>
+  </div>
+
+  <div class="detail-grid">
+    <section class="card">
+      <div class="section-title">
+        <div>
+          <h2>Repository Details</h2>
+          <p class="page-copy">Core tracking and ingestion metadata.</p>
+        </div>
+        <%= link_to "Add Another", new_repository_path, class: "button button-secondary" %>
+      </div>
+
+      <dl class="meta-grid">
+        <div>
+          <dt>Status</dt>
+          <dd><span class="status-pill status-<%= repository.status %>"><%= repository.status.humanize %></span></dd>
+        </div>
+        <div>
+          <dt>Tracked branch</dt>
+          <dd><%= repository.tracked_branch %></dd>
+        </div>
+        <div>
+          <dt>Default branch</dt>
+          <dd><%= repository.default_branch %></dd>
+        </div>
+        <div>
+          <dt>Visibility</dt>
+          <dd><%= repository.visibility.humanize %></dd>
+        </div>
+        <div>
+          <dt>Provider</dt>
+          <dd><%= repository.provider %></dd>
+        </div>
+        <div>
+          <dt>Last commit SHA</dt>
+          <dd><%= repository.last_commit_sha.presence || "Not available" %></dd>
+        </div>
+        <div>
+          <dt>Last ingested at</dt>
+          <dd><%= repository.last_ingested_at ? repository.last_ingested_at.strftime("%Y-%m-%d %H:%M") : "Not yet" %></dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <div>
+          <h2>Latest Ingestion</h2>
+          <p class="page-copy">Most recent sync execution status.</p>
+        </div>
+      </div>
+
+      <% if latest_ingestion.present? %>
+        <dl class="meta-grid">
+          <div>
+            <dt>Status</dt>
+            <dd><span class="status-pill status-<%= latest_ingestion.status %>"><%= latest_ingestion.status.humanize %></span></dd>
+          </div>
+          <div>
+            <dt>Branch</dt>
+            <dd><%= latest_ingestion.branch_name %></dd>
+          </div>
+          <div>
+            <dt>Commit SHA</dt>
+            <dd><%= latest_ingestion.commit_sha.presence || "Not available" %></dd>
+          </div>
+          <div>
+            <dt>Started</dt>
+            <dd><%= latest_ingestion.started_at ? latest_ingestion.started_at.strftime("%Y-%m-%d %H:%M") : "Not started" %></dd>
+          </div>
+          <div>
+            <dt>Finished</dt>
+            <dd><%= latest_ingestion.finished_at ? latest_ingestion.finished_at.strftime("%Y-%m-%d %H:%M") : "Not finished" %></dd>
+          </div>
+          <div>
+            <dt>Error</dt>
+            <dd><%= latest_ingestion.error_message.presence || "None" %></dd>
+          </div>
+        </dl>
+      <% else %>
+        <p class="page-copy">No ingestion run exists yet.</p>
+      <% end %>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <div>
+          <h2>Recent Ingestions</h2>
+          <p class="page-copy">Recent sync history for this repository.</p>
+        </div>
+      </div>
+
+      <% if recent_ingestions.any? %>
+        <div class="timeline-list">
+          <% recent_ingestions.each do |ingestion| %>
+            <article class="timeline-item">
+              <span class="timeline-title"><%= "#{ingestion.status.humanize} · #{ingestion.branch_name}" %></span>
+              <span class="timeline-meta"><%= ingestion.created_at.strftime("%Y-%m-%d %H:%M") %></span>
+            </article>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="page-copy">No ingestion history yet.</p>
+      <% end %>
+    </section>
+
+    <section class="card">
+      <div class="section-title">
+        <div>
+          <h2>Audit Log</h2>
+          <p class="page-copy">System-recorded repository events.</p>
+        </div>
+      </div>
+
+      <% if recent_audit_logs.any? %>
+        <div class="timeline-list">
+          <% recent_audit_logs.each do |log| %>
+            <article class="timeline-item">
+              <span class="timeline-title"><%= log.message.presence || log.event %></span>
+              <span class="timeline-meta"><%= log.created_at.strftime("%Y-%m-%d %H:%M") %></span>
+            </article>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="page-copy">No audit events recorded yet.</p>
+      <% end %>
+    </section>
+  </div>
+</div>

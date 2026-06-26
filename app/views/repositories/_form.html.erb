@@ -1,0 +1,64 @@
+<%= form_with model: repository do |form| %>
+  <% if repository.errors.any? %>
+    <section class="error-box">
+      <h2><%= pluralize(repository.errors.count, "error") %> prevented saving this repository</h2>
+      <ul>
+        <% repository.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <div class="form-grid two-up">
+    <div class="field">
+      <%= form.label :name %>
+      <%= form.text_field :name, required: true, placeholder: "engineering-knowledge-assistant" %>
+    </div>
+
+    <div class="field">
+      <%= form.label :github_url, "GitHub URL" %>
+      <%= form.url_field :github_url, required: true, placeholder: "https://github.com/owner/repository" %>
+    </div>
+
+    <div class="field">
+      <%= form.label :default_branch %>
+      <%= form.text_field :default_branch, placeholder: "main" %>
+    </div>
+
+    <div class="field">
+      <%= form.label :tracked_branch %>
+      <%= form.text_field :tracked_branch, placeholder: "Leave blank to use default branch" %>
+    </div>
+  </div>
+
+  <section class="card card-muted">
+    <div class="section-title">
+      <div>
+        <h2>Inherited AI Settings</h2>
+        <p class="page-copy">Assistant and embedding configuration are now managed centrally for the current user.</p>
+      </div>
+      <%= link_to "Manage AI Settings", edit_settings_path, class: "button button-secondary" %>
+    </div>
+
+    <dl class="meta-grid">
+      <div>
+        <dt>Assistant</dt>
+        <dd><%= "#{current_user.assistant_provider} · #{current_user.assistant_model}" %></dd>
+      </div>
+      <div>
+        <dt>Embeddings</dt>
+        <dd><%= "#{current_user.embedding_provider} · #{current_user.embedding_model}" %></dd>
+      </div>
+      <div>
+        <dt>Ollama endpoint</dt>
+        <dd><%= current_user.ollama_base_url %></dd>
+      </div>
+    </dl>
+  </section>
+
+  <div class="button-row">
+    <%= link_to "Cancel", repository.persisted? ? repository_path(repository) : repositories_path, class: "button button-secondary" %>
+    <%= form.submit repository.persisted? ? "Update Repository" : "Create Repository", class: "button button-primary" %>
+  </div>
+<% end %>

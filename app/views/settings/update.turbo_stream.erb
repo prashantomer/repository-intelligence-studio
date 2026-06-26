@@ -1,0 +1,5 @@
+<%= turbo_stream.replace "settings-content" do %>
+  <%= render "settings/content", user: @user, assistant_profile: @assistant_profile, embedding_profile: @embedding_profile %>
+<% end %>
+
+<%= turbo_stream.replace "flash-stack", partial: "shared/flash" %>

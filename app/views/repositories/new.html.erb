@@ -1,0 +1,15 @@
+<% content_for :title, "New Repository" %>
+
+<div class="page narrow-page">
+  <div class="page-header">
+    <div>
+      <p class="eyebrow">Repository Setup</p>
+      <h1>Add Repository</h1>
+      <p class="page-copy">Public GitHub repositories only for the current MVP.</p>
+    </div>
+  </div>
+
+  <section class="card">
+    <%= render "form", repository: @repository %>
+  </section>
+</div>

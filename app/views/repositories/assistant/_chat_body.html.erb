@@ -1,0 +1,14 @@
+<div class="assistant-chat-body" id="assistant-chat-body">
+  <% if messages.any? %>
+    <div class="message-list assistant-message-list">
+      <% messages.each do |message| %>
+        <%= render "repositories/assistant/message", message:, repository: %>
+      <% end %>
+    </div>
+  <% else %>
+    <section class="empty-state assistant-empty-state">
+      <h2>Start the first repository conversation</h2>
+      <p>Ask about architecture, execution flow, dependencies, indexing, or likely impact of a change.</p>
+    </section>
+  <% end %>
+</div>
