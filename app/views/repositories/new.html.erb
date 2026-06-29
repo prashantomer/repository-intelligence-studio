@@ -1,13 +1,11 @@
 <% content_for :title, "New Repository" %>
 
 <div class="page narrow-page">
-  <div class="page-header">
-    <div>
-      <p class="eyebrow">Repository Setup</p>
-      <h1>Add Repository</h1>
-      <p class="page-copy">Public GitHub repositories only for the current MVP.</p>
-    </div>
-  </div>
+  <%= render "shared/page_header",
+             classes: "workspace-header-compact",
+             eyebrow: "Admin",
+             title: "Add Repository",
+             description: "Register a public repository for ingestion and grounded Q&A." %>
 
   <section class="card">
     <%= render "form", repository: @repository %>

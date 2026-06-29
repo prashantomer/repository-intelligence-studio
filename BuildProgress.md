@@ -8,6 +8,118 @@
 
 ## Progress Log
 
+### Step 19 — Dependency graph edge foundation
+
+- Status: `completed`
+- Goal:
+  - start Phase 5 by normalizing current extracted relationships into a dedicated graph edge layer
+  - make dependency graph readiness visible on the repository workspace
+- Output:
+  - added `dependency_edges` persistence and `DependencyEdge` model
+  - added `Codebase::DependencyEdgeBuilderService` to normalize entity relationships and route-to-controller links
+  - wired dependency edge rebuilding into repository indexing
+  - surfaced dependency edge totals and edge-type breakdown on the repository overview page
+- Notes:
+  - this is the graph foundation step, not the full impact-analysis feature yet
+  - next Phase 5 step should add traversal queries and impact-oriented lookup services
+
+### Assistant Context Upgrade — Conversation-aware repository Q&A
+
+- Status: `completed`
+- Goal:
+  - make follow-up questions keep thread context instead of behaving like isolated one-off prompts
+  - improve retrieval quality for short or referential questions such as `what about holdings?` or `tell me more`
+- Output:
+  - added `app/services/assistant/conversation_context_service.rb` to build recent thread transcript and a context-aware retrieval query
+  - updated answer generation to pass recent conversation context into retrieval, provider prompting, and local fallback answers
+  - updated the assistant job path so background generation excludes the pending placeholder and uses the active conversation thread
+  - updated the composer hints to make thread-context reuse explicit in the UI
+- Notes:
+  - repository chunks remain the source of truth; prior messages are used only to resolve follow-up references
+  - this improves continuity for repository conversations without turning the assistant into a generic ungrounded chat
+
+### UI Refresh Step 7 — Repository overview tabs
+
+- Status: `completed`
+- Goal:
+  - replace the long repository overview card stack with an in-page tabbed workspace
+  - keep the repository page compact while still exposing details, ingestion, config, audit, and actions
+- Output:
+  - replaced the overview two-column stack with in-page overview tabs
+  - added lightweight JavaScript tab switching for repository overview sections
+  - grouped content into `Details`, `Ingestion`, `Config`, `Audit`, and `Actions`
+- Notes:
+  - this keeps the repository page flatter and more admin-panel-like without needing new routes
+  - repository-level top navigation to `Overview`, `Assistant`, and `Search` remains unchanged
+
+### UI Refresh Step 6 — Admin-panel polish across app
+
+- Status: `completed`
+- Goal:
+  - propagate the tighter admin-panel density from the repositories index across the rest of the app
+  - reduce bulky spacing, narrative copy, and oversized panels on assistant, search, settings, and forms
+- Output:
+  - tightened shared shell spacing, sidebar density, button scale, card padding, and form controls
+  - converted assistant, search, settings, and repository setup screens to compact shared headers
+  - reduced assistant panel/chat/composer density and tightened search results into slimmer result rows
+  - refreshed repository new/edit and centralized settings pages to match the admin-panel style
+- Notes:
+  - the app now shares one denser visual system instead of the earlier mixed dashboard/workspace feel
+  - the repositories page remains the strongest admin-panel surface and now sets the tone for the rest of the UI
+
+### UI Refresh Step 5 — Repository overview
+
+- Status: `completed`
+- Goal:
+  - make the repository overview the primary operational workspace screen
+  - separate core repository/sync information from supporting configuration and audit context
+- Output:
+  - reorganized overview into a main content column and supporting side column
+  - elevated latest ingestion and recent sync history into the primary reading path
+  - moved assistant, embeddings, audit log, and quick actions into compact support panels
+  - added overview-specific layout helpers and compact support-panel styling
+- Notes:
+  - repository overview now acts as the canonical repository workspace layout
+  - dedicated `Ingestions` and `Logs` pages remain future enhancements; overview still surfaces that information now
+
+### UI Refresh Step 4 — Repositories index
+
+- Status: `completed`
+- Goal:
+  - replace the old hero-heavy repositories landing screen with a denser operational index
+  - improve scanability of repository status, AI configuration, and ingestion footprint
+- Output:
+  - replaced the index hero section with shared workspace header and compact metric row
+  - converted repository listing into row-based operational cards instead of large generic cards
+  - added index-specific toolbar and repository row styles for denser scanning
+- Notes:
+  - the repositories page now behaves more like a control surface than a landing page
+  - filtering and sorting controls are still deferred; this step focuses on layout and hierarchy only
+
+### UI Refresh Step 3 — Shared page primitives
+
+- Status: `completed`
+- Goal:
+  - introduce reusable workspace-level UI primitives before page-by-page screen refresh
+  - establish shared repository tab navigation and compact metric/header patterns
+- Output:
+  - added shared partials:
+    - `app/views/shared/_page_header.html.erb`
+    - `app/views/shared/_repository_tabs.html.erb`
+    - `app/views/shared/_metric_row.html.erb`
+  - added shared CSS primitives for:
+    - workspace headers
+    - repository sub-navigation tabs
+    - compact metric rows
+    - standard panel/timeline helper classes
+  - wired repository tabs and shared headers into:
+    - repository overview
+    - repository assistant
+    - repository search
+- Notes:
+  - `Ingestions` and `Logs` are intentionally shown as disabled future tabs for structural consistency
+  - deeper page layout refresh remains for the next screen-specific steps
+
 ### Step 1 — Rails application bootstrap
 
 - Status: `completed`
@@ -845,9 +957,22 @@
 
 ### Step 18 — Provider call audit logging
 
-- Status: `pending`
+- Status: `completed`
 - Goal:
   - record every provider call in the database for later inspection
   - capture usage, latency, success/failure, and estimated cost metadata for assistant and embedding operations
   - add a first internal log page backed by database records
   - defer realtime streaming/tailing UI until after the database-backed logger is stable
+- Output:
+  - added `provider_call_logs` persistence with repository/user/provider/model/usage/latency/cost fields
+  - added `Ai::ProviderCallLogRecorder` and `Ai::CostEstimator` for structured provider audit capture
+  - wired assistant provider calls and remote embedding calls into database logging
+  - added internal `Provider Logs` page with repository/provider/operation/status filtering
+  - added sidebar navigation entry for provider log review
+- Validation:
+  - `ruby -c` passed for the new model, controller, and logging service files
+  - ERB parse check passed for `app/views/provider_call_logs/index.html.erb`
+- Notes:
+  - realtime log streaming is still deferred; this step is database-backed history only
+  - local deterministic embeddings and local grounded answers are not logged as remote provider calls
+  - apply the new migration before using the page in the running app

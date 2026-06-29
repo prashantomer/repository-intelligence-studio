@@ -1,34 +1,29 @@
 <% content_for :title, "Search #{@repository.name}" %>
 
 <div class="page">
-  <section class="hero-card">
-    <div class="page-header">
-      <div>
-        <p class="eyebrow">Semantic Search</p>
-        <h1><%= @repository.name %></h1>
-        <p class="page-copy">Search generated code chunks for this repository only. Results are ranked by embedding similarity.</p>
-        <div class="meta-inline">
-          <span>Provider: <%= @repository.embedding_provider %></span>
-          <span>Model: <%= @repository.embedding_model %></span>
-          <span>Results: <%= @results.size %></span>
-        </div>
-      </div>
-
-      <div class="hero-actions">
-        <%= link_to "Back to Repository", repository_path(@repository), class: "button button-secondary" %>
-        <%= link_to "AI Settings", edit_settings_path, class: "button button-secondary" %>
-        <%= link_to "Assistant", assistant_repository_path(@repository), class: "button button-secondary" %>
-      </div>
-    </div>
-  </section>
+  <%= render "shared/page_header",
+             classes: "workspace-header-compact",
+             eyebrow: "Semantic Search",
+             title: @repository.name,
+             description: "Search repository chunks by semantic similarity.",
+             meta_items: [
+               "Provider: #{@repository.embedding_provider}",
+               "Model: #{@repository.embedding_model}",
+               "Results: #{@results.size}"
+             ],
+             actions: [
+               link_to("Back to Repository", repository_path(@repository), class: "button button-secondary"),
+               link_to("AI Settings", edit_settings_path, class: "button button-secondary"),
+               link_to("Assistant", assistant_repository_path(@repository), class: "button button-secondary")
+             ] %>
 
   <turbo-frame id="search-workspace">
     <div class="two-column-grid">
       <section class="card">
         <div class="section-title">
           <div>
-            <h2>Search Repository Chunks</h2>
-            <p class="page-copy">Use implementation-level questions, feature names, classes, modules, or route concepts.</p>
+            <h2>Search Chunks</h2>
+            <p class="page-copy">Use classes, modules, services, features, or workflows.</p>
           </div>
         </div>
 
@@ -51,7 +46,7 @@
         <div class="section-title">
           <div>
             <h2>Search Scope</h2>
-            <p class="page-copy">What this page searches.</p>
+            <p class="page-copy">Retrieval boundaries.</p>
           </div>
         </div>
 
@@ -77,15 +72,15 @@
         <div class="section-title">
           <div>
             <h2>Results</h2>
-            <p class="page-copy">Top repository chunk matches for <strong><%= @query %></strong>.</p>
+            <p class="page-copy">Top matches for <strong><%= @query %></strong>.</p>
           </div>
         </div>
 
         <% if @results.any? %>
-          <div class="card-list">
+          <div class="search-results-list">
             <% @results.each do |chunk| %>
-              <article class="card card-muted">
-                <div class="card-title-row">
+              <article class="search-result-row">
+                <div class="search-result-row-header">
                   <div>
                     <h2><%= chunk.code_file.path %></h2>
                     <p class="page-copy">Lines <%= chunk.start_line %>–<%= chunk.end_line %></p>

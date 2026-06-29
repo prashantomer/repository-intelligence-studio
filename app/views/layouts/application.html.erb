@@ -28,8 +28,9 @@
     <div class="app-frame">
       <aside class="app-sidebar">
         <div class="sidebar-brand">
-          <span class="brand-mark">Engineering Knowledge Assistant</span>
-          <span class="brand-copy">Ingestion, retrieval, and grounded repository answers.</span>
+          <span class="brand-mark">Repository Intelligence Studio</span>
+          <strong class="sidebar-brand-title">Workspace</strong>
+          <span class="brand-copy">Operational repository intelligence and grounded answers.</span>
         </div>
 
         <nav class="sidebar-nav">
@@ -37,31 +38,35 @@
             <span class="sidebar-nav-label">Workspace</span>
             <%= link_to repositories_path, class: "sidebar-link #{'is-active' if current_page?(repositories_path)}" do %>
               <span class="sidebar-link-title">Repositories</span>
-              <span class="sidebar-link-copy">Manage tracked repositories</span>
             <% end %>
 
             <%= link_to edit_settings_path, class: "sidebar-link #{'is-active' if current_page?(edit_settings_path)}" do %>
               <span class="sidebar-link-title">AI Settings</span>
-              <span class="sidebar-link-copy">Providers, models, and retrieval defaults</span>
+            <% end %>
+
+            <%= link_to provider_call_logs_path, class: "sidebar-link #{'is-active' if current_page?(provider_call_logs_path)}" do %>
+              <span class="sidebar-link-title">Provider Logs</span>
             <% end %>
           </div>
 
-          <% if defined?(@repository) && @repository.present? %>
+          <% if defined?(@repository) && @repository.present? && @repository.persisted? %>
             <div class="sidebar-nav-group">
               <span class="sidebar-nav-label">Current Repository</span>
+              <div class="sidebar-context-card">
+                <strong><%= @repository.name %></strong>
+                <span class="sidebar-user-copy"><%= @repository.tracked_branch %> branch</span>
+              </div>
+
               <%= link_to repository_path(@repository), class: "sidebar-link #{'is-active' if current_page?(repository_path(@repository))}" do %>
-                <span class="sidebar-link-title"><%= @repository.name %></span>
-                <span class="sidebar-link-copy">Overview and ingestion status</span>
+                <span class="sidebar-link-title">Overview</span>
               <% end %>
 
               <%= link_to assistant_repository_path(@repository), class: "sidebar-link #{'is-active' if current_page?(assistant_repository_path(@repository))}" do %>
                 <span class="sidebar-link-title">Assistant</span>
-                <span class="sidebar-link-copy">Repository-scoped chat and answers</span>
               <% end %>
 
               <%= link_to search_repository_path(@repository), class: "sidebar-link #{'is-active' if current_page?(search_repository_path(@repository))}" do %>
                 <span class="sidebar-link-title">Search Chunks</span>
-                <span class="sidebar-link-copy">Inspect retrieval and semantic matches</span>
               <% end %>
             </div>
           <% end %>
@@ -69,27 +74,16 @@
 
         <div class="sidebar-footer">
           <div class="sidebar-user-card">
-            <span class="sidebar-nav-label">Current User</span>
-            <strong><%= current_user.name %></strong>
+            <div>
+              <span class="sidebar-nav-label">Current User</span>
+              <strong><%= current_user.name %></strong>
+            </div>
             <span class="sidebar-user-copy"><%= current_user.assistant_provider.humanize %> assistant · <%= current_user.embedding_provider.humanize %> embeddings</span>
           </div>
         </div>
       </aside>
 
       <main class="app-shell">
-        <header class="app-topbar">
-          <div class="topbar-copy">
-            <span class="topbar-eyebrow">Workspace</span>
-            <h1><%= content_for?(:title) ? yield(:title) : "Engineering Knowledge Assistant" %></h1>
-            <p class="brand-copy">Repository intelligence in a single operational workspace.</p>
-          </div>
-
-          <div class="topbar-actions">
-            <%= link_to "Add Repository", new_repository_path, class: "button button-primary" %>
-            <%= link_to "Repositories", repositories_path, class: "button button-secondary" unless current_page?(repositories_path) %>
-          </div>
-        </header>
-
         <div class="app-content-shell">
           <%= render "shared/flash" %>
           <%= yield %>

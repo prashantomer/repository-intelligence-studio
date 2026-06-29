@@ -1,24 +1,24 @@
 <div id="settings-content" class="page">
-  <section class="hero-card">
-    <div class="page-header">
-      <div>
-        <p class="eyebrow">User Settings</p>
-        <h1>Centralized AI Settings</h1>
-        <p class="page-copy">These settings apply across all repositories owned by the current user. Update them once here instead of per repository.</p>
-      </div>
-
-      <div class="hero-actions">
-        <%= link_to "Back to Repositories", repositories_path, class: "button button-secondary" %>
-      </div>
-    </div>
-  </section>
+  <%= render "shared/page_header",
+             classes: "workspace-header-compact",
+             eyebrow: "Admin",
+             title: "AI Settings",
+             description: "Centralized provider and model configuration.",
+             meta_items: [
+               "User: #{user.name}",
+               "Assistant: #{user.assistant_provider}",
+               "Embeddings: #{user.embedding_provider}"
+             ],
+             actions: [
+               link_to("Back to Repositories", repositories_path, class: "button button-secondary")
+             ] %>
 
   <div class="two-column-grid">
     <section class="card">
       <div class="section-title">
         <div>
           <h2>AI Configuration</h2>
-          <p class="page-copy">Assistant generation and embedding retrieval defaults for every repository.</p>
+          <p class="page-copy">Defaults for all repositories.</p>
         </div>
       </div>
 
@@ -52,7 +52,7 @@
               <div class="section-title">
                 <div>
                   <h2>Profile</h2>
-                  <p class="page-copy">Owner-level defaults for all repositories under this user.</p>
+                  <p class="page-copy">Owner defaults.</p>
                 </div>
               </div>
 
@@ -69,7 +69,7 @@
               <div class="section-title">
                 <div>
                   <h2>Provider Connection</h2>
-                  <p class="page-copy">Used when a self-hosted runtime is selected.</p>
+                  <p class="page-copy">Self-hosted runtime only.</p>
                 </div>
               </div>
 
@@ -88,7 +88,7 @@
               <div class="section-title">
                 <div>
                   <h2>Assistant Generation</h2>
-                  <p class="page-copy">Controls answer generation after grounded retrieval.</p>
+                  <p class="page-copy">Answer generation runtime.</p>
                 </div>
               </div>
 
@@ -138,7 +138,7 @@
               <div class="section-title">
                 <div>
                   <h2>Embedding & Retrieval</h2>
-                  <p class="page-copy">Controls semantic search and chunk similarity.</p>
+                  <p class="page-copy">Semantic search runtime.</p>
                 </div>
               </div>
 
@@ -198,7 +198,7 @@
       <div class="section-title">
         <div>
           <h2>Provider Status</h2>
-          <p class="page-copy">Current runtime readiness and support boundaries.</p>
+          <p class="page-copy">Runtime readiness.</p>
         </div>
       </div>
 

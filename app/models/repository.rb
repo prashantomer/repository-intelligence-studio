@@ -21,6 +21,8 @@ class Repository < ApplicationRecord
   has_many :entity_relationships, dependent: :destroy
   has_many :repository_routes, dependent: :destroy
   has_many :conversations, dependent: :destroy
+  has_many :provider_call_logs, dependent: :destroy
+  has_many :dependency_edges, dependent: :destroy
 
   attribute :indexed_embedding_provider, :string
   attribute :indexed_embedding_model, :string

@@ -111,6 +111,8 @@ class RepositoriesController < ApplicationController
     @entities_count = @repository.entities.count
     @routes_count = @repository.repository_routes.count
     @relationships_count = @repository.entity_relationships.count
+    @dependency_edges_count = @repository.dependency_edges.count
+    @dependency_edge_breakdown = @repository.dependency_edges.group(:edge_type).order(Arel.sql("count_all DESC")).limit(5).count
   end
 
   def repository_params

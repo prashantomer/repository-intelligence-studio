@@ -1,101 +1,77 @@
 <% content_for :title, "Repositories" %>
 
-<div class="page">
-  <section class="hero-card">
-    <div class="page-header">
-      <div>
-        <p class="eyebrow">Engineering Knowledge Assistant</p>
-        <h1>Repositories</h1>
-        <p class="page-copy">Track public repositories, ingest their code, search indexed chunks, and ask grounded questions against each repository separately.</p>
-      </div>
-
-      <div class="hero-actions">
-        <%= link_to "AI Settings", edit_settings_path, class: "button button-secondary" %>
-        <%= link_to "Add Repository", new_repository_path, class: "button button-primary" %>
-      </div>
-    </div>
-
-    <div class="hero-stats">
-      <div class="hero-stat">
-        <div class="hero-stat-value"><%= @repositories.count %></div>
-        <span class="hero-stat-label">Repositories</span>
-      </div>
-      <div class="hero-stat">
-        <div class="hero-stat-value"><%= @repositories.completed.count %></div>
-        <span class="hero-stat-label">Completed</span>
-      </div>
-      <div class="hero-stat">
-        <div class="hero-stat-value"><%= @repositories.sum { |repository| repository.code_chunks.count } %></div>
-        <span class="hero-stat-label">Indexed Chunks</span>
-      </div>
-      <div class="hero-stat">
-        <div class="hero-stat-value"><%= @repositories.sum { |repository| repository.entities.count } %></div>
-        <span class="hero-stat-label">Entities</span>
-      </div>
-    </div>
-  </section>
+<div class="page repositories-page">
+  <%= render "shared/page_header",
+             classes: "workspace-header-compact repository-page-header",
+             eyebrow: "Admin",
+             title: "Repositories",
+             description: "Manage tracked repositories and review sync state.",
+             actions: [
+               link_to("AI Settings", edit_settings_path, class: "button button-secondary"),
+               link_to("Add Repository", new_repository_path, class: "button button-primary")
+             ] %>
 
   <% if @repositories.any? %>
-    <div class="card-list">
+    <section class="card repository-index-shell">
+      <div class="repository-index-toolbar">
+        <strong class="repository-index-toolbar-title">Repository inventory</strong>
+        <div class="repository-index-toolbar-meta">
+          <span class="status-pill">Public repositories</span>
+          <span class="status-pill">Single workspace view</span>
+        </div>
+      </div>
+
+      <div class="repository-list">
+        <div class="repository-list-header">
+          <span>Repository</span>
+          <span>Source</span>
+          <span>Assistant</span>
+          <span>Embeddings</span>
+          <span>Footprint</span>
+          <span>Sync</span>
+        </div>
+
       <% @repositories.each do |repository| %>
-        <%= link_to repository_path(repository), class: "card-link" do %>
-          <article class="card">
-            <div class="card-title-row">
+        <%= link_to repository_path(repository), class: "repository-row" do %>
+          <article class="repository-row-main">
+            <div class="repository-row-title repository-row-grid">
               <div>
                 <h2><%= repository.name %></h2>
-                <p class="card-url"><%= repository.github_url %></p>
+                <p class="card-url repository-row-url"><%= repository.github_url %></p>
               </div>
-              <span class="status-pill status-<%= repository.status %>"><%= repository.status.humanize %></span>
-            </div>
+              <div class="repository-row-cell">
+                <strong><%= repository.tracked_branch %></strong>
+                <span class="repository-row-copy"><%= repository.provider %> · <%= repository.visibility.humanize %></span>
+              </div>
 
-            <dl class="meta-grid">
-              <div>
-                <dt>Tracked branch</dt>
-                <dd><%= repository.tracked_branch %></dd>
+              <div class="repository-row-cell">
+                <strong><%= repository.assistant_provider %></strong>
+                <span class="repository-row-copy"><%= repository.assistant_model %></span>
               </div>
-              <div>
-                <dt>Provider</dt>
-                <dd><%= repository.provider %></dd>
+
+              <div class="repository-row-cell">
+                <strong><%= repository.embedding_provider %></strong>
+                <span class="repository-row-copy"><%= repository.embedding_model %></span>
               </div>
-              <div>
-                <dt>Visibility</dt>
-                <dd><%= repository.visibility.humanize %></dd>
+
+              <div class="repository-row-cell">
+                <strong><%= pluralize(repository.code_files.count, "file") %></strong>
+                <span class="repository-row-copy"><%= repository.code_chunks.count %> chunks · <%= repository.entities.count %> entities</span>
               </div>
-              <div>
-                <dt>Last ingested</dt>
-                <dd><%= repository.last_ingested_at ? repository.last_ingested_at.strftime("%Y-%m-%d %H:%M") : "Not yet" %></dd>
+
+              <div class="repository-row-cell repository-row-sync">
+                <span class="status-pill status-<%= repository.status %>"><%= repository.status.humanize %></span>
+                <strong><%= repository.last_ingested_at ? repository.last_ingested_at.strftime("%Y-%m-%d %H:%M") : "Not yet" %></strong>
+                <span class="repository-row-copy"><%= repository.entity_relationships.count %> relations</span>
               </div>
-              <div>
-                <dt>Assistant</dt>
-                <dd><%= "#{repository.assistant_provider} · #{repository.assistant_model}" %></dd>
-              </div>
-              <div>
-                <dt>Embeddings</dt>
-                <dd><%= "#{repository.embedding_provider} · #{repository.embedding_model}" %></dd>
-              </div>
-              <div>
-                <dt>Files</dt>
-                <dd><%= repository.code_files.count %></dd>
-              </div>
-              <div>
-                <dt>Entities</dt>
-                <dd><%= repository.entities.count %></dd>
-              </div>
-              <div>
-                <dt>Chunks</dt>
-                <dd><%= repository.code_chunks.count %></dd>
-              </div>
-              <div>
-                <dt>Relations</dt>
-                <dd><%= repository.entity_relationships.count %></dd>
-              </div>
-            </dl>
+            </div>
           </article>
         <% end %>
       <% end %>
-    </div>
+      </div>
+    </section>
   <% else %>
-    <section class="empty-state">
+    <section class="empty-state workspace-empty">
       <h2>No repositories yet</h2>
       <p>Create the first public repository record to start building the ingestion flow.</p>
       <%= link_to "Create Repository", new_repository_path, class: "button button-primary" %>

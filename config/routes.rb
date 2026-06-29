@@ -21,6 +21,7 @@ Rails.application.routes.draw do
 
   root "repositories#index"
   resource :settings, only: %i[edit update]
+  resources :provider_call_logs, only: :index
 
   resources :repositories, only: %i[index new create show edit update] do
     post :resync, on: :member

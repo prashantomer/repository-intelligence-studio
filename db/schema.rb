@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_26_113000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_26_231000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -57,6 +57,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_26_113000) do
     t.index ["user_id"], name: "index_conversations_on_user_id"
   end
 
+  create_table "dependency_edges", force: :cascade do |t|
+    t.decimal "confidence", precision: 4, scale: 2, default: "0.5", null: false
+    t.datetime "created_at", null: false
+    t.string "edge_type", null: false
+    t.bigint "repository_id", null: false
+    t.bigint "source_id", null: false
+    t.string "source_type", null: false
+    t.bigint "target_id", null: false
+    t.string "target_type", null: false
+    t.datetime "updated_at", null: false
+    t.index ["repository_id", "edge_type"], name: "index_dependency_edges_on_repository_and_edge_type"
+    t.index ["repository_id", "source_type", "source_id", "target_type", "target_id", "edge_type"], name: "index_dependency_edges_on_repository_source_target_and_type", unique: true
+    t.index ["repository_id", "source_type", "source_id"], name: "index_dependency_edges_on_repository_and_source"
+    t.index ["repository_id", "target_type", "target_id"], name: "index_dependency_edges_on_repository_and_target"
+    t.index ["repository_id"], name: "index_dependency_edges_on_repository_id"
+  end
+
   create_table "entities", force: :cascade do |t|
     t.bigint "code_file_id", null: false
     t.datetime "created_at", null: false
@@ -101,6 +118,32 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_26_113000) do
     t.index ["conversation_id"], name: "index_messages_on_conversation_id"
     t.index ["response_state"], name: "index_messages_on_response_state"
     t.index ["role"], name: "index_messages_on_role"
+  end
+
+  create_table "provider_call_logs", force: :cascade do |t|
+    t.integer "completion_tokens", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.string "endpoint"
+    t.text "error_message"
+    t.decimal "estimated_cost_usd", precision: 12, scale: 6
+    t.integer "latency_ms", default: 0, null: false
+    t.string "model", null: false
+    t.string "operation_type", null: false
+    t.integer "prompt_tokens", default: 0, null: false
+    t.string "provider", null: false
+    t.bigint "repository_id", null: false
+    t.jsonb "request_metadata", default: {}, null: false
+    t.jsonb "response_metadata", default: {}, null: false
+    t.string "status", null: false
+    t.integer "total_tokens", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["created_at"], name: "index_provider_call_logs_on_created_at"
+    t.index ["provider", "operation_type", "status"], name: "index_provider_call_logs_on_provider_operation_status"
+    t.index ["repository_id", "created_at"], name: "index_provider_call_logs_on_repository_id_and_created_at"
+    t.index ["repository_id"], name: "index_provider_call_logs_on_repository_id"
+    t.index ["user_id", "created_at"], name: "index_provider_call_logs_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_provider_call_logs_on_user_id"
   end
 
   create_table "repositories", force: :cascade do |t|
@@ -179,12 +222,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_26_113000) do
   add_foreign_key "code_chunks", "repositories"
   add_foreign_key "code_files", "repositories"
   add_foreign_key "conversations", "repositories"
+  add_foreign_key "dependency_edges", "repositories"
   add_foreign_key "entities", "code_files"
   add_foreign_key "entities", "repositories"
   add_foreign_key "entity_relationships", "entities", column: "source_entity_id"
   add_foreign_key "entity_relationships", "entities", column: "target_entity_id"
   add_foreign_key "entity_relationships", "repositories"
   add_foreign_key "messages", "conversations"
+  add_foreign_key "provider_call_logs", "repositories"
+  add_foreign_key "provider_call_logs", "users"
   add_foreign_key "repositories", "users"
   add_foreign_key "repository_ingestions", "repositories"
   add_foreign_key "repository_routes", "repositories"
