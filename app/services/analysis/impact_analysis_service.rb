@@ -1,8 +1,9 @@
 module Analysis
   class ImpactAnalysisService < ApplicationService
-    def initialize(repository:, entity_identifier:)
+    def initialize(repository:, entity_identifier:, query: nil)
       @repository = repository
       @entity_identifier = entity_identifier.to_s.strip
+      @query = query.to_s.strip
     end
 
     def call
@@ -83,7 +84,7 @@ module Analysis
 
     private
 
-    attr_reader :repository, :entity_identifier
+    attr_reader :repository, :entity_identifier, :query
 
     def build_summary(entity:, traversal:, chunks:, affected_entities:, impacted_files:)
       direct_downstream = traversal.fetch(:direct_downstream_edge_count)
@@ -158,7 +159,7 @@ module Analysis
       return unless ImpactReport.available?
 
       repository.impact_reports.create!(
-        query: entity_identifier,
+        query: persisted_query,
         generated_at: Time.current,
         result_json: {
           entity_name: entity.name,
@@ -217,6 +218,10 @@ module Analysis
       )
     rescue ActiveRecord::ActiveRecordError
       nil
+    end
+
+    def persisted_query
+      query.presence || entity_identifier
     end
   end
 end

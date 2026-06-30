@@ -37,8 +37,12 @@
               <td>Enter a concrete code identifier: class, module, controller, job, service, function, package, model, serializer, or worker name.</td>
             </tr>
             <tr>
-              <th>Avoid</th>
-              <td>Very broad phrases like `payments`, `login`, or `API` unless that is the actual entity/component name in the repository.</td>
+              <th>Good input</th>
+              <td>Ask about a specific repository target, for example <code>What breaks if RepositoryIngestion changes?</code> or <code>Show me all routes that touch SettingsController</code>.</td>
+            </tr>
+            <tr>
+              <th>Bad input</th>
+              <td>Avoid broad conceptual prompts like <code>Impact of rework on design?</code> or <code>How risky is refactoring this app?</code> unless they mention a concrete code entity.</td>
             </tr>
             <tr>
               <th>Examples</th>
@@ -143,10 +147,10 @@
           <div class="field">
             <%= form.label :dependency_entity, "What are you changing?" %>
             <%= form.text_field :dependency_entity,
-                                value: @dependency_lookup_query,
-                                placeholder: "Class, module, service, job, controller, function, package, or key component name",
+                                value: @impact_query || @dependency_lookup_query,
+                                placeholder: "Ask in plain English, e.g. What breaks if User model changes?",
                                 data: { impact_form_target: "input" } %>
-            <span class="field-hint">Use a repository-specific identifier such as `OrderService`, `checkout`, `payment_worker`, `UserSerializer`, or `HoldingsController`.</span>
+            <span class="field-hint">You can enter a natural-language question or a direct code identifier. The analyzer will try to resolve the target entity from your question.</span>
           </div>
         </div>
 
@@ -180,6 +184,9 @@
           <div>
             <h2>Live Impact Result</h2>
             <p class="page-copy"><%= "#{entity.name} · #{entity.entity_type.humanize} · #{entity.code_file.path}" %></p>
+            <% if @impact_query.present? && @resolved_impact_query.present? && @impact_query != @resolved_impact_query %>
+              <p class="page-copy">Resolved from query: <code><%= @impact_query %></code> → <code><%= @resolved_impact_query %></code></p>
+            <% end %>
           </div>
         </div>
 

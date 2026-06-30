@@ -123,9 +123,10 @@ class RepositoriesController < ApplicationController
 
   def load_impact_workspace_data
     @recent_impact_reports = ImpactReport.available? ? @repository.impact_reports.recent_first.limit(20) : []
-    @dependency_lookup_query = params[:dependency_entity].to_s.strip
+    @impact_query = params[:dependency_entity].to_s.strip
+    @dependency_lookup_query = @impact_query
 
-    if @dependency_lookup_query.present?
+    if @impact_query.present?
       load_dependency_lookup
       @selected_impact_report = @impact_analysis_result&.fetch(:impact_report, nil)
     elsif params[:report_id].present? && ImpactReport.available?
@@ -136,10 +137,19 @@ class RepositoriesController < ApplicationController
   end
 
   def load_dependency_lookup
-    @dependency_lookup_query = params[:dependency_entity].to_s.strip
-    return if @dependency_lookup_query.blank?
+    @impact_query = params[:dependency_entity].to_s.strip
+    @dependency_lookup_query = @impact_query
+    return if @impact_query.blank?
 
-    result = DependencyGraph::TraversalQuery.call(repository: @repository, entity_identifier: @dependency_lookup_query)
+    interpreter_result = Analysis::ImpactQueryInterpreterService.call(repository: @repository, query: @impact_query)
+    if interpreter_result.failure?
+      @dependency_lookup_error = interpreter_result.error.to_s
+      return
+    end
+
+    @resolved_impact_query = interpreter_result.data.fetch(:entity_identifier)
+
+    result = DependencyGraph::TraversalQuery.call(repository: @repository, entity_identifier: @resolved_impact_query)
 
     if result.success?
       @dependency_lookup_result = result.data
@@ -150,7 +160,11 @@ class RepositoriesController < ApplicationController
   end
 
   def load_impact_analysis
-    result = Analysis::ImpactAnalysisService.call(repository: @repository, entity_identifier: @dependency_lookup_query)
+    result = Analysis::ImpactAnalysisService.call(
+      repository: @repository,
+      entity_identifier: @resolved_impact_query || @dependency_lookup_query,
+      query: @impact_query
+    )
 
     if result.success?
       @impact_analysis_result = result.data

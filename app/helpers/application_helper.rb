@@ -137,9 +137,27 @@ module ApplicationHelper
 
   def impact_input_examples(repository)
     existing = repository.entities.order(:entity_type, :name).limit(5).pluck(:name).uniq
-    return existing if existing.any?
+    if existing.any?
+      templates = [
+        "What breaks if %<name>s changes?",
+        "Which files depend on %<name>s?",
+        "What APIs use %<name>s?",
+        "Show me all routes that touch %<name>s",
+        "What jobs depend on %<name>s?"
+      ]
 
-    %w[OrderService CheckoutFlow payment_worker UserSerializer AppController]
+      return existing.first(5).each_with_index.map do |name, index|
+        format(templates[index % templates.length], name: name)
+      end
+    end
+
+    [
+      "What breaks if OrderService changes?",
+      "Which files depend on CheckoutFlow?",
+      "What APIs use payment_worker?",
+      "Show me all routes that touch UserSerializer",
+      "What jobs depend on AppController?"
+    ]
   end
 
   private
