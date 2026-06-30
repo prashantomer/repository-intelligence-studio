@@ -5,7 +5,8 @@ class ProviderCallLog < ApplicationRecord
   enum :operation_type,
        {
          assistant: "assistant",
-         embedding: "embedding"
+         embedding: "embedding",
+         impact_analysis: "impact_analysis"
        },
        validate: true
 

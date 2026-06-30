@@ -1,0 +1,72 @@
+profiles:
+  rails:
+    label: Rails
+    languages:
+      - ruby
+      - erb
+    markers:
+      - Gemfile
+      - config/routes.rb
+      - app/models
+      - app/controllers
+    impact_focus:
+      - controllers, routes, jobs, models, and service objects
+      - callbacks, background jobs, and request/response boundaries
+      - shared concerns, serializers, and persistence-side effects
+  python:
+    label: Python
+    languages:
+      - python
+    markers:
+      - pyproject.toml
+      - requirements.txt
+      - setup.py
+      - manage.py
+      - app
+      - src
+    impact_focus:
+      - package/module imports, service boundaries, and task runners
+      - framework entrypoints such as Django views, FastAPI routes, or CLI commands
+      - async workers, signals, and serializer/schema layers
+  node:
+    label: Node / TypeScript
+    languages:
+      - javascript
+      - typescript
+      - jsx
+      - tsx
+    markers:
+      - package.json
+      - tsconfig.json
+      - src
+      - apps
+      - packages
+    impact_focus:
+      - exported modules, API handlers, service layers, and package boundaries
+      - async flows, queue workers, and event-driven side effects
+      - shared types, contracts, and frontend/backend integration surfaces
+  java:
+    label: Java / JVM
+    languages:
+      - java
+      - kotlin
+      - scala
+    markers:
+      - pom.xml
+      - build.gradle
+      - build.gradle.kts
+      - settings.gradle
+      - src/main/java
+      - src/main/kotlin
+    impact_focus:
+      - service classes, controllers, repositories, and dependency injection boundaries
+      - scheduled/background jobs, message consumers, and transactional flows
+      - DTOs, interfaces, and cross-module contracts
+  generic:
+    label: Generic Repository
+    languages: []
+    markers: []
+    impact_focus:
+      - primary entrypoints, shared modules, and dependency boundaries
+      - background or async execution paths
+      - public contracts, schemas, or reusable library surfaces

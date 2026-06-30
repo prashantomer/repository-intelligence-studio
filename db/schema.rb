@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_26_231000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_30_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -102,6 +102,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_26_231000) do
     t.index ["source_entity_id", "target_entity_id", "relationship_type"], name: "idx_entity_relationship_uniqueness", unique: true
     t.index ["source_entity_id"], name: "index_entity_relationships_on_source_entity_id"
     t.index ["target_entity_id"], name: "index_entity_relationships_on_target_entity_id"
+  end
+
+  create_table "impact_reports", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "generated_at", null: false
+    t.string "query", null: false
+    t.bigint "repository_id", null: false
+    t.jsonb "result_json", default: {}, null: false
+    t.datetime "updated_at", null: false
+    t.index ["query"], name: "index_impact_reports_on_query"
+    t.index ["repository_id", "generated_at"], name: "index_impact_reports_on_repository_id_and_generated_at"
+    t.index ["repository_id"], name: "index_impact_reports_on_repository_id"
   end
 
   create_table "messages", force: :cascade do |t|
@@ -228,6 +240,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_26_231000) do
   add_foreign_key "entity_relationships", "entities", column: "source_entity_id"
   add_foreign_key "entity_relationships", "entities", column: "target_entity_id"
   add_foreign_key "entity_relationships", "repositories"
+  add_foreign_key "impact_reports", "repositories"
   add_foreign_key "messages", "conversations"
   add_foreign_key "provider_call_logs", "repositories"
   add_foreign_key "provider_call_logs", "users"
