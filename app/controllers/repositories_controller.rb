@@ -1,5 +1,5 @@
 class RepositoriesController < ApplicationController
-  before_action :set_repository, only: %i[show edit update resync search assistant ask]
+  before_action :set_repository, only: %i[show edit update resync search impact assistant ask]
 
   def index
     @repositories = current_user.repositories.recent_first
@@ -66,6 +66,10 @@ class RepositoriesController < ApplicationController
     end
   end
 
+  def impact
+    load_impact_workspace_data
+  end
+
   def assistant
     @conversation = @repository.conversations.order(created_at: :desc).first
     @messages = @conversation&.messages&.order(created_at: :asc) || []
@@ -113,6 +117,46 @@ class RepositoriesController < ApplicationController
     @relationships_count = @repository.entity_relationships.count
     @dependency_edges_count = @repository.dependency_edges.count
     @dependency_edge_breakdown = @repository.dependency_edges.group(:edge_type).order(Arel.sql("count_all DESC")).limit(5).count
+    @recent_impact_reports = ImpactReport.available? ? @repository.impact_reports.recent_first.limit(10) : []
+    load_dependency_lookup
+  end
+
+  def load_impact_workspace_data
+    @recent_impact_reports = ImpactReport.available? ? @repository.impact_reports.recent_first.limit(20) : []
+    @dependency_lookup_query = params[:dependency_entity].to_s.strip
+
+    if @dependency_lookup_query.present?
+      load_dependency_lookup
+      @selected_impact_report = @impact_analysis_result&.fetch(:impact_report, nil)
+    elsif params[:report_id].present? && ImpactReport.available?
+      @selected_impact_report = @repository.impact_reports.find_by(id: params[:report_id])
+    else
+      @selected_impact_report = @recent_impact_reports.first
+    end
+  end
+
+  def load_dependency_lookup
+    @dependency_lookup_query = params[:dependency_entity].to_s.strip
+    return if @dependency_lookup_query.blank?
+
+    result = DependencyGraph::TraversalQuery.call(repository: @repository, entity_identifier: @dependency_lookup_query)
+
+    if result.success?
+      @dependency_lookup_result = result.data
+      load_impact_analysis
+    else
+      @dependency_lookup_error = result.error.to_s
+    end
+  end
+
+  def load_impact_analysis
+    result = Analysis::ImpactAnalysisService.call(repository: @repository, entity_identifier: @dependency_lookup_query)
+
+    if result.success?
+      @impact_analysis_result = result.data
+    else
+      @impact_analysis_error = result.error.to_s
+    end
   end
 
   def repository_params

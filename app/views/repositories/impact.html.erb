@@ -1,0 +1,663 @@
+<% content_for :title, "Impact #{@repository.name}" %>
+
+<turbo-frame id="impact-page">
+<div class="page">
+  <%= render "shared/page_header",
+             classes: "workspace-header-compact",
+             eyebrow: "Impact Analyzer",
+             title: @repository.name,
+             description: "Repository-scoped dependency and change impact analysis.",
+             meta_items: [
+               "Saved reports: #{@recent_impact_reports.size}",
+               "Selected: #{@selected_impact_report&.entity_name || @impact_analysis_result&.dig(:entity)&.name || "None"}"
+             ],
+             actions: [
+               button_tag("Help", type: :button, class: "button button-secondary", data: { modal_open: "impact-help-modal" }),
+               button_tag("History", type: :button, class: "button button-secondary", data: { modal_open: "impact-history-modal" }),
+               link_to("Back to Repository", repository_path(@repository), class: "button button-secondary"),
+               link_to("Assistant", assistant_repository_path(@repository), class: "button button-secondary"),
+               link_to("Search Chunks", search_repository_path(@repository), class: "button button-secondary")
+             ] %>
+
+  <div class="modal-overlay is-hidden" id="impact-help-modal" data-modal>
+    <div class="modal-dialog impact-help-dialog" role="dialog" aria-modal="true" aria-labelledby="impact-help-title">
+      <div class="section-title modal-header">
+        <div>
+          <h2 id="impact-help-title">How To Use Impact Analyzer</h2>
+          <p class="page-copy">What to enter and what output to expect.</p>
+        </div>
+        <button type="button" class="button button-secondary button-compact" data-modal-close="impact-help-modal">Close</button>
+      </div>
+
+      <div class="table-scroll assistant-mini-table-shell impact-help-table-shell">
+        <table class="data-table assistant-mini-table">
+          <tbody>
+            <tr>
+              <th>Best input</th>
+              <td>Enter a concrete code identifier: class, module, controller, job, service, function, package, model, serializer, or worker name.</td>
+            </tr>
+            <tr>
+              <th>Avoid</th>
+              <td>Very broad phrases like `payments`, `login`, or `API` unless that is the actual entity/component name in the repository.</td>
+            </tr>
+            <tr>
+              <th>Examples</th>
+              <td><%= safe_join(impact_input_examples(@repository).map { |name| content_tag(:code, name) }, ", ") %>.</td>
+            </tr>
+            <tr>
+              <th>What it reads</th>
+              <td>Dependency edges, upstream/downstream entities, related routes/jobs/files, plus semantic retrieval evidence from the ingested repository snapshot.</td>
+            </tr>
+            <tr>
+              <th>What you get</th>
+              <td>Risk level, affected entities, impacted files, route/job touch points, retrieved evidence, and narrated review guidance with a checklist.</td>
+            </tr>
+            <tr>
+              <th>Use it for</th>
+              <td>Blast-radius estimation, change review, regression test planning, and understanding what code paths are most exposed.</td>
+            </tr>
+            <tr>
+              <th>Current limit</th>
+              <td>Results depend on the extracted entities and relationships available for the current repository and language coverage.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay is-hidden" id="impact-history-modal" data-modal>
+    <div class="modal-dialog impact-help-dialog" role="dialog" aria-modal="true" aria-labelledby="impact-history-title">
+      <div class="section-title modal-header">
+        <div>
+          <h2 id="impact-history-title">Saved Impact Reports</h2>
+          <p class="page-copy">Open past reports and jump to related work surfaces.</p>
+        </div>
+        <button type="button" class="button button-secondary button-compact" data-modal-close="impact-history-modal">Close</button>
+      </div>
+
+      <% if @recent_impact_reports.any? %>
+        <div class="table-scroll audit-log-table-shell impact-help-table-shell">
+          <table class="data-table audit-log-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Entity</th>
+                <th>Risk</th>
+                <th>Details</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @recent_impact_reports.each do |report| %>
+                <tr>
+                  <td><%= report.generated_at.strftime("%Y-%m-%d %H:%M") %></td>
+                  <td>
+                    <div class="log-meta-stack">
+                      <strong><%= report.entity_name %></strong>
+                      <span class="timeline-meta"><%= report.entity_type.humanize %> · <%= report.entity_path %></span>
+                    </div>
+                  </td>
+                  <td><span class="status-pill status-impact-<%= report.risk_level %>"><%= report.risk_level.humanize %></span></td>
+                  <td>
+                    <div class="log-meta-stack">
+                      <span class="timeline-meta"><%= report.affected_entities_count %> affected · <%= report.impacted_files_count %> files</span>
+                      <span class="timeline-meta"><%= report.routes_count %> routes · <%= report.jobs_count %> jobs</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="modal-action-row">
+                      <%= link_to "Open", impact_repository_path(@repository, report_id: report.id), class: "button button-secondary button-compact" %>
+                      <%= link_to "Analyze Again", impact_repository_path(@repository, dependency_entity: report.query), class: "button button-secondary button-compact" %>
+                      <%= link_to "Assistant", assistant_repository_path(@repository), class: "button button-secondary button-compact" %>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <section class="empty-state workspace-empty overview-empty-state">
+          <h2>No saved impact reports yet</h2>
+          <p>Run the first impact analysis to create a saved report snapshot.</p>
+        </section>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="two-column-grid impact-workspace-grid">
+    <section class="card impact-analysis-sidebar">
+      <div class="section-title">
+        <div>
+          <h2>Analyze Change</h2>
+          <p class="page-copy">Enter the thing you plan to change, then inspect blast radius, connected code, and review guidance.</p>
+        </div>
+      </div>
+
+      <%= form_with url: impact_repository_path(@repository),
+                    method: :get,
+                    local: true,
+                    data: { turbo_frame: "impact-page", impact_form: true } do |form| %>
+        <div class="form-grid">
+          <div class="field">
+            <%= form.label :dependency_entity, "What are you changing?" %>
+            <%= form.text_field :dependency_entity,
+                                value: @dependency_lookup_query,
+                                placeholder: "Class, module, service, job, controller, function, package, or key component name",
+                                data: { impact_form_target: "input" } %>
+            <span class="field-hint">Use a repository-specific identifier such as `OrderService`, `checkout`, `payment_worker`, `UserSerializer`, or `HoldingsController`.</span>
+          </div>
+        </div>
+
+        <div class="button-row">
+          <%= form.submit "Analyze Impact", class: "button button-primary", data: { impact_form_target: "submit" } %>
+        </div>
+      <% end %>
+
+      <div class="impact-input-examples">
+        <span class="sidebar-nav-label">Try Inputs Like</span>
+        <div class="workspace-header-meta">
+          <% impact_input_examples(@repository).each do |example| %>
+            <span class="workspace-header-meta-item"><%= example %></span>
+          <% end %>
+        </div>
+      </div>
+
+      <% if @dependency_lookup_error.present? %>
+        <section class="empty-state workspace-empty overview-empty-state">
+          <h2>Impact lookup unavailable</h2>
+          <p><%= @dependency_lookup_error %></p>
+        </section>
+      <% end %>
+
+    </section>
+
+    <section class="card impact-analysis-main">
+      <% if @impact_analysis_result.present? %>
+        <% entity = @impact_analysis_result.fetch(:entity) %>
+        <div class="section-title">
+          <div>
+            <h2>Live Impact Result</h2>
+            <p class="page-copy"><%= "#{entity.name} · #{entity.entity_type.humanize} · #{entity.code_file.path}" %></p>
+          </div>
+        </div>
+
+        <dl class="meta-grid">
+          <div>
+            <dt>Risk level</dt>
+            <dd><span class="status-pill status-impact-<%= @impact_analysis_result.fetch(:risk_level) %>"><%= @impact_analysis_result.fetch(:risk_level).humanize %></span></dd>
+          </div>
+          <div>
+            <dt>Affected entities</dt>
+            <dd><%= @impact_analysis_result.fetch(:affected_entities).size %></dd>
+          </div>
+          <div>
+            <dt>Impacted files</dt>
+            <dd><%= @impact_analysis_result.fetch(:impacted_files).size %></dd>
+          </div>
+          <div>
+            <dt>Routes</dt>
+            <dd><%= @impact_analysis_result.fetch(:routes).size %></dd>
+          </div>
+          <div>
+            <dt>Jobs</dt>
+            <dd><%= @impact_analysis_result.fetch(:jobs).size %></dd>
+          </div>
+        </dl>
+
+        <div class="assistant-rich-text dependency-impact-summary">
+          <%= render_assistant_message(@impact_analysis_result.fetch(:summary)) %>
+        </div>
+
+        <% if @impact_analysis_result[:narration].present? %>
+          <section class="card impact-narration-card">
+            <div class="section-title">
+              <div>
+                <h2>Review Guidance</h2>
+                <p class="page-copy">Narrated interpretation from <%= @impact_analysis_result[:narration_source].to_s.humanize %>.</p>
+              </div>
+            </div>
+            <% if @impact_analysis_result[:repository_profile].present? %>
+              <div class="workspace-header-meta impact-profile-meta">
+                <span class="workspace-header-meta-item">Profile: <%= @impact_analysis_result[:repository_profile][:label] %></span>
+                <% Array(@impact_analysis_result[:repository_profile][:dominant_languages]).each do |language| %>
+                  <span class="workspace-header-meta-item"><%= language %></span>
+                <% end %>
+              </div>
+            <% end %>
+            <div class="assistant-rich-text dependency-impact-summary">
+              <%= render_assistant_message(@impact_analysis_result[:narration]) %>
+            </div>
+            <% if @impact_analysis_result[:checklist].any? %>
+              <div class="assistant-citations">
+                <div class="assistant-citations-title">Suggested checklist</div>
+                <div class="citation-list">
+                  <% @impact_analysis_result[:checklist].each do |item| %>
+                    <div class="citation-item">
+                      <span class="timeline-title"><%= item %></span>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+            <% if @impact_analysis_result[:provider_error].present? %>
+              <p class="page-copy">Provider fallback reason: <%= @impact_analysis_result[:provider_error] %></p>
+            <% end %>
+          </section>
+        <% end %>
+
+        <div class="dependency-lookup-columns impact-detail-columns impact-detail-columns-triple">
+          <div class="table-scroll audit-log-table-shell">
+            <table class="data-table audit-log-table">
+              <thead>
+                <tr>
+                  <th>Upstream dependencies</th>
+                  <th>Type</th>
+                  <th>Path</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if @impact_analysis_result.fetch(:upstream_entities).any? %>
+                  <% @impact_analysis_result.fetch(:upstream_entities).each do |related_entity| %>
+                    <tr>
+                      <td><%= related_entity.name %></td>
+                      <td><%= related_entity.entity_type.humanize %></td>
+                      <td><%= related_entity.code_file.path %></td>
+                    </tr>
+                  <% end %>
+                <% else %>
+                  <tr>
+                    <td colspan="3">No upstream dependencies found.</td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-scroll audit-log-table-shell">
+            <table class="data-table audit-log-table">
+              <thead>
+                <tr>
+                  <th>Downstream dependents</th>
+                  <th>Type</th>
+                  <th>Path</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if @impact_analysis_result.fetch(:downstream_entities).any? %>
+                  <% @impact_analysis_result.fetch(:downstream_entities).each do |related_entity| %>
+                    <tr>
+                      <td><%= related_entity.name %></td>
+                      <td><%= related_entity.entity_type.humanize %></td>
+                      <td><%= related_entity.code_file.path %></td>
+                    </tr>
+                  <% end %>
+                <% else %>
+                  <tr>
+                    <td colspan="3">No downstream dependents found.</td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-scroll audit-log-table-shell">
+            <table class="data-table audit-log-table">
+              <thead>
+                <tr>
+                  <th>Affected entities</th>
+                  <th>Type</th>
+                  <th>Path</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @impact_analysis_result.fetch(:affected_entities).each do |related_entity| %>
+                  <tr>
+                    <td><%= related_entity.name %></td>
+                    <td><%= related_entity.entity_type.humanize %></td>
+                    <td><%= related_entity.code_file.path %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="dependency-lookup-columns impact-detail-columns">
+          <div class="table-scroll audit-log-table-shell">
+            <table class="data-table audit-log-table">
+              <thead>
+                <tr>
+                  <th>Routes</th>
+                  <th>Controller</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if @impact_analysis_result.fetch(:routes).any? %>
+                  <% @impact_analysis_result.fetch(:routes).each do |route| %>
+                    <tr>
+                      <td><%= "#{route.http_method} #{route.path}" %></td>
+                      <td><%= route.controller_name.presence || "—" %></td>
+                      <td><%= route.action_name.presence || "—" %></td>
+                    </tr>
+                  <% end %>
+                <% else %>
+                  <tr>
+                    <td colspan="3">No routes found.</td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-scroll audit-log-table-shell">
+            <table class="data-table audit-log-table">
+              <thead>
+                <tr>
+                  <th>Jobs</th>
+                  <th>Path</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if @impact_analysis_result.fetch(:jobs).any? %>
+                  <% @impact_analysis_result.fetch(:jobs).each do |job_entity| %>
+                    <tr>
+                      <td><%= job_entity.name %></td>
+                      <td><%= job_entity.code_file.path %></td>
+                    </tr>
+                  <% end %>
+                <% else %>
+                  <tr>
+                    <td colspan="2">No background jobs found.</td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-scroll audit-log-table-shell">
+            <table class="data-table audit-log-table">
+              <thead>
+                <tr>
+                  <th>Impacted files</th>
+                  <th>Language</th>
+                  <th>Size</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @impact_analysis_result.fetch(:impacted_files).each do |code_file| %>
+                  <tr>
+                    <td><%= code_file.path %></td>
+                    <td><%= code_file.language %></td>
+                    <td><%= number_to_human_size(code_file.size_bytes) %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <% if @impact_analysis_result.fetch(:citations).any? %>
+          <div class="assistant-citations">
+            <div class="assistant-citations-title">Retrieved evidence</div>
+            <div class="citation-list">
+              <% @impact_analysis_result.fetch(:citations).each do |citation| %>
+                <div class="citation-item">
+                  <span class="timeline-title"><%= citation[:path] %>:<%= citation[:start_line] %>-<%= citation[:end_line] %></span>
+                  <span class="timeline-meta"><%= [citation[:entity_name], citation[:chunk_type]].compact.join(" · ") %></span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      <% elsif @selected_impact_report.present? %>
+        <div class="section-title">
+          <div>
+            <h2>Saved Impact Report</h2>
+            <p class="page-copy"><%= "#{@selected_impact_report.entity_name} · #{@selected_impact_report.entity_type.humanize} · #{@selected_impact_report.entity_path}" %></p>
+          </div>
+        </div>
+
+        <dl class="meta-grid">
+          <div>
+            <dt>Generated</dt>
+            <dd><%= @selected_impact_report.generated_at.strftime("%Y-%m-%d %H:%M") %></dd>
+          </div>
+          <div>
+            <dt>Risk level</dt>
+            <dd><span class="status-pill status-impact-<%= @selected_impact_report.risk_level %>"><%= @selected_impact_report.risk_level.humanize %></span></dd>
+          </div>
+          <div>
+            <dt>Affected entities</dt>
+            <dd><%= @selected_impact_report.affected_entities_count %></dd>
+          </div>
+          <div>
+            <dt>Impacted files</dt>
+            <dd><%= @selected_impact_report.impacted_files_count %></dd>
+          </div>
+          <div>
+            <dt>Routes</dt>
+            <dd><%= @selected_impact_report.routes_count %></dd>
+          </div>
+          <div>
+            <dt>Jobs</dt>
+            <dd><%= @selected_impact_report.jobs_count %></dd>
+          </div>
+        </dl>
+
+        <div class="assistant-rich-text dependency-impact-summary">
+          <%= render_assistant_message(@selected_impact_report.summary) %>
+        </div>
+
+        <% if @selected_impact_report.narration.present? %>
+          <section class="card impact-narration-card">
+            <div class="section-title">
+              <div>
+                <h2>Review Guidance</h2>
+                <p class="page-copy">Narrated interpretation from <%= @selected_impact_report.narration_source.to_s.humanize %>.</p>
+              </div>
+            </div>
+            <% if @selected_impact_report.repository_profile.present? %>
+              <div class="workspace-header-meta impact-profile-meta">
+                <span class="workspace-header-meta-item">Profile: <%= @selected_impact_report.repository_profile["label"] || "Unknown" %></span>
+                <% Array(@selected_impact_report.repository_profile["dominant_languages"]).each do |language| %>
+                  <span class="workspace-header-meta-item"><%= language %></span>
+                <% end %>
+              </div>
+            <% end %>
+            <div class="assistant-rich-text dependency-impact-summary">
+              <%= render_assistant_message(@selected_impact_report.narration) %>
+            </div>
+            <% if @selected_impact_report.checklist.any? %>
+              <div class="assistant-citations">
+                <div class="assistant-citations-title">Suggested checklist</div>
+                <div class="citation-list">
+                  <% @selected_impact_report.checklist.each do |item| %>
+                    <div class="citation-item">
+                      <span class="timeline-title"><%= item %></span>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+            <% if @selected_impact_report.provider_error.present? %>
+              <p class="page-copy">Provider fallback reason: <%= @selected_impact_report.provider_error %></p>
+            <% end %>
+          </section>
+        <% end %>
+
+        <div class="dependency-lookup-columns impact-detail-columns impact-detail-columns-triple">
+          <div class="table-scroll audit-log-table-shell">
+            <table class="data-table audit-log-table">
+              <thead>
+                <tr>
+                  <th>Upstream dependencies</th>
+                  <th>Type</th>
+                  <th>Path</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if @selected_impact_report.upstream_entities.any? %>
+                  <% @selected_impact_report.upstream_entities.each do |related_entity| %>
+                    <tr>
+                      <td><%= related_entity["name"] %></td>
+                      <td><%= related_entity["entity_type"].to_s.humanize %></td>
+                      <td><%= related_entity["path"] %></td>
+                    </tr>
+                  <% end %>
+                <% else %>
+                  <tr>
+                    <td colspan="3">No upstream dependencies found.</td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-scroll audit-log-table-shell">
+            <table class="data-table audit-log-table">
+              <thead>
+                <tr>
+                  <th>Downstream dependents</th>
+                  <th>Type</th>
+                  <th>Path</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if @selected_impact_report.downstream_entities.any? %>
+                  <% @selected_impact_report.downstream_entities.each do |related_entity| %>
+                    <tr>
+                      <td><%= related_entity["name"] %></td>
+                      <td><%= related_entity["entity_type"].to_s.humanize %></td>
+                      <td><%= related_entity["path"] %></td>
+                    </tr>
+                  <% end %>
+                <% else %>
+                  <tr>
+                    <td colspan="3">No downstream dependents found.</td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-scroll audit-log-table-shell">
+            <table class="data-table audit-log-table">
+              <thead>
+                <tr>
+                  <th>Affected entities</th>
+                  <th>Type</th>
+                  <th>Path</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @selected_impact_report.affected_entities.each do |related_entity| %>
+                  <tr>
+                    <td><%= related_entity["name"] %></td>
+                    <td><%= related_entity["entity_type"].to_s.humanize %></td>
+                    <td><%= related_entity["path"] %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="dependency-lookup-columns impact-detail-columns">
+          <div class="table-scroll audit-log-table-shell">
+            <table class="data-table audit-log-table">
+              <thead>
+                <tr>
+                  <th>Routes</th>
+                  <th>Controller</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if @selected_impact_report.routes.any? %>
+                  <% @selected_impact_report.routes.each do |route| %>
+                    <tr>
+                      <td><%= "#{route["method"]} #{route["path"]}" %></td>
+                      <td><%= route["controller"].presence || "—" %></td>
+                      <td><%= route["action"].presence || "—" %></td>
+                    </tr>
+                  <% end %>
+                <% else %>
+                  <tr>
+                    <td colspan="3">No routes found.</td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-scroll audit-log-table-shell">
+            <table class="data-table audit-log-table">
+              <thead>
+                <tr>
+                  <th>Jobs</th>
+                  <th>Path</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if @selected_impact_report.jobs.any? %>
+                  <% @selected_impact_report.jobs.each do |job_entity| %>
+                    <tr>
+                      <td><%= job_entity["name"] %></td>
+                      <td><%= job_entity["path"] %></td>
+                    </tr>
+                  <% end %>
+                <% else %>
+                  <tr>
+                    <td colspan="2">No background jobs found.</td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-scroll audit-log-table-shell">
+            <table class="data-table audit-log-table">
+              <thead>
+                <tr>
+                  <th>Impacted files</th>
+                  <th>Language</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @selected_impact_report.impacted_files.each do |code_file| %>
+                  <tr>
+                    <td><%= code_file["path"] %></td>
+                    <td><%= code_file["language"] %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <% if @selected_impact_report.citations.any? %>
+          <div class="assistant-citations">
+            <div class="assistant-citations-title">Retrieved evidence</div>
+            <div class="citation-list">
+              <% @selected_impact_report.citations.each do |citation| %>
+                <div class="citation-item">
+                  <span class="timeline-title"><%= citation["path"] %>:<%= citation["start_line"] %>-<%= citation["end_line"] %></span>
+                  <span class="timeline-meta"><%= [citation["entity_name"], citation["chunk_type"]].compact.join(" · ") %></span>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      <% else %>
+        <section class="empty-state workspace-empty overview-empty-state">
+          <h2>No impact analysis selected</h2>
+          <p>Analyze an entity or open a saved report to inspect affected files, routes, jobs, and retrieval evidence.</p>
+        </section>
+      <% end %>
+    </section>
+  </div>
+</div>
+</turbo-frame>

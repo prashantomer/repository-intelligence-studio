@@ -8,6 +8,195 @@
 
 ## Progress Log
 
+### Step 24 — Impact analyzer drill-down tables
+
+- Status: `completed`
+- Goal:
+  - turn the dedicated Impact Analyzer page into a more useful inspection surface
+  - separate upstream, downstream, routes, jobs, affected entities, and files instead of flattening everything into one summary
+- Output:
+  - added upstream and downstream entity drill-down tables for live analyses
+  - persisted upstream and downstream entities into saved impact reports
+  - added routes and background jobs drill-down tables for live and saved reports
+  - expanded the impact workspace layout to support three-column dependency inspection
+- Notes:
+  - this materially improves non-chat investigation because users can now inspect dependency direction explicitly
+  - provider-backed narrative/risk commentary is still the next major impact-analysis enhancement
+
+### Step 25 — Impact analyzer guidance and narration
+
+- Status: `completed`
+- Goal:
+  - make the Impact Analyzer easier to use without external explanation
+  - add provider-backed review guidance on top of deterministic graph evidence
+- Output:
+  - added `Analysis::ImpactNarrationService` for provider-backed impact guidance with deterministic fallback
+  - persisted narration, checklist, and fallback metadata into saved impact reports
+  - added `How To Use` instructions directly on the Impact Analyzer page
+  - surfaced narrated review guidance and suggested checklist in the dedicated impact workspace
+- Notes:
+  - remote providers are used only as an interpretation layer on top of repository evidence
+  - local fallback remains available when the configured provider is unavailable or disabled
+
+### Step 26 — Language-aware impact prompt shaping
+
+- Status: `completed`
+- Goal:
+  - improve impact narration quality across Rails, Python, Node/TypeScript, and Java/JVM repositories
+  - stop treating every repository as if it has the same architectural patterns
+- Output:
+  - added `config/repository_profiles.yml` for maintainable repository-profile heuristics and impact-review focus
+  - added `Codebase::RepositoryProfileService` to infer repository profile from indexed files, languages, and framework markers
+  - updated `Analysis::ImpactNarrationService` to inject profile label, dominant languages, matched markers, and framework-specific review focus into prompts
+  - persisted inferred profile context into saved impact reports and surfaced it in the Impact Analyzer UI
+- Notes:
+  - this improves narration quality even before deeper language-specific graph extraction is added
+  - parser coverage still limits how much structured evidence exists for non-Rails repositories
+
+### Step 27 — Impact analyzer input guidance refinement
+
+- Status: `completed`
+- Goal:
+  - make the Impact Analyzer easier to use for first-time users
+  - clarify both the kind of input the analyzer expects and the kind of output it produces
+- Output:
+  - changed the input label and placeholder to focus on “what are you changing?”
+  - added concrete example inputs directly under the form
+  - expanded the `How To Use` panel to explain:
+    - best input types
+    - what to avoid
+    - what repository evidence is read
+    - what output the user should expect
+    - current limitations
+- Notes:
+  - this is a usability improvement only; it does not change the underlying analysis logic
+
+### Step 28 — Impact analyzer help popup
+
+- Status: `completed`
+- Goal:
+  - move usage instructions out of the sidebar to reduce clutter
+  - make help available on demand from the top action area
+- Output:
+  - moved `How To Use` guidance into a modal popup on the Impact Analyzer page
+  - added a `Help` button to the top action row
+  - added reusable modal open/close behavior with overlay click and `Escape` support
+- Notes:
+  - this keeps the workspace focused while still preserving usage guidance nearby
+
+### Step 29 — Impact history popup and lookup hardening
+
+- Status: `completed`
+- Goal:
+  - move saved report history out of the sidebar and into an on-demand popup
+  - reduce false-empty impact lookups caused by strict exact-name matching
+- Output:
+  - moved saved report history to a header `History` popup with report details and quick actions
+  - removed the saved-reports block from the sidebar to keep the workspace narrower
+  - made impact example inputs repository-aware using actual extracted entity names when available
+  - hardened entity lookup by stripping wrapping quotes/backticks and allowing namespace/file/partial-name matching
+  - added closer failure messaging with suggested entity names when no exact match exists
+- Notes:
+  - if impact analysis still fails for an expected identifier, the likely remaining cause is missing entity extraction for that language/framework rather than the lookup path itself
+
+### Step 30 — Turbo-driven impact analyzer
+
+- Status: `completed`
+- Goal:
+  - make the Impact Analyzer update in place instead of doing a full page reload
+  - give the form a clearer pending state during analysis requests
+- Output:
+  - wrapped the impact page in a dedicated Turbo frame
+  - routed impact form submissions back into that frame for in-place updates
+  - added `Analyzing...` submit-state behavior with temporary input locking
+- Notes:
+  - this is synchronous request/response over Turbo, not a background-job flow like assistant chat
+  - header actions, modals, lookup errors, and results now refresh without a full page navigation
+
+### Step 31 — Turbo frame modal rebinding fix
+
+- Status: `completed`
+- Goal:
+  - restore modal button behavior after Impact Analyzer Turbo frame refreshes
+- Output:
+  - added `turbo:frame-load` UI rebinding for modal and form behaviors in `app/javascript/application.js`
+- Notes:
+  - the issue was not the `History` button markup itself; it was the missing JavaScript rebind after frame-driven DOM replacement
+
+### Step 32 — Saved impact report modal scroll fix
+
+- Status: `completed`
+- Goal:
+  - fix the saved-report history popup so long report lists scroll cleanly inside the modal
+- Output:
+  - converted the modal table shell to a flexed inner scroll region with bounded height
+- Notes:
+  - this keeps the modal header pinned while the saved report list itself scrolls
+
+### Step 23 — Dedicated impact analyzer workspace
+
+- Status: `completed`
+- Goal:
+  - move impact analysis out of the crowded overview page into a dedicated repository workspace
+  - make saved reports and live analyses inspectable in one focused surface
+- Output:
+  - added `GET /repositories/:id/impact` as a dedicated Impact Analyzer page
+  - added repository sidebar navigation for `Impact Analyzer`
+  - added live analysis workspace with affected entities, impacted files, and evidence display
+  - added saved-report browsing from the new impact page
+  - linked the new workspace from repository overview, assistant, and search
+- Notes:
+  - this is the first dedicated product surface for impact analysis
+  - the next step can add richer drill-downs for routes/jobs and optional provider-backed risk narration
+
+### Step 22 — Impact report persistence
+
+- Status: `completed`
+- Goal:
+  - persist repository-scoped impact analysis results instead of keeping them as transient page output only
+  - expose a working saved-report layer before adding LLM-backed impact narration
+- Output:
+  - added `ImpactReport` persistence with `query`, `result_json`, and `generated_at`
+  - updated `Analysis::ImpactAnalysisService` to save successful analyses automatically
+  - surfaced recent saved impact reports on the repository overview page
+  - added safe fallback behavior so the app still works before the new migration is run
+- Notes:
+  - local sandbox validation could not run the migration because PostgreSQL socket access is blocked here
+  - once `bundle exec rails db:migrate` is run in your local app environment, reports will persist and list normally
+
+### Step 21 — Impact analysis summary layer
+
+- Status: `completed`
+- Goal:
+  - combine dependency traversal evidence with semantic retrieval into a repository-scoped impact estimate
+  - surface a first concrete answer to `what breaks if X changes?`
+- Output:
+  - added `app/services/analysis/impact_analysis_service.rb`
+  - combined graph traversal counts, related routes/jobs/files, and top retrieved code chunks into a deterministic impact summary
+  - added risk-level classification and retrieved evidence citations on the repository overview page
+- Notes:
+  - this is the first impact-report layer; it is deterministic and repository-scoped
+  - a later step can add provider-generated risk summarization or persisted `impact_reports`
+
+### Step 20 — Dependency traversal queries and lookup UI
+
+- Status: `completed`
+- Goal:
+  - build the first queryable traversal layer on top of normalized dependency edges
+  - let repository users inspect upstream, downstream, routes, jobs, and related files for a named entity
+- Output:
+  - added `app/queries/dependency_graph/traversal_query.rb` for repository-scoped graph traversal
+  - added dependency lookup handling to the repository show flow
+  - added a repository overview lookup form and result panels for:
+    - upstream dependencies
+    - downstream dependents
+    - routes touching the graph path
+    - jobs touching the graph path
+    - related files
+- Notes:
+  - this is an evidence/traversal step, not the final LLM-backed impact report yet
+  - next Phase 5 step should combine these traversal results with retrieval and risk summarization
+
 ### Step 19 — Dependency graph edge foundation
 
 - Status: `completed`

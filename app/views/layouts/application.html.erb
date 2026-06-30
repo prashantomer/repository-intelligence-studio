@@ -65,6 +65,10 @@
                 <span class="sidebar-link-title">Assistant</span>
               <% end %>
 
+              <%= link_to impact_repository_path(@repository), class: "sidebar-link #{'is-active' if current_page?(impact_repository_path(@repository))}" do %>
+                <span class="sidebar-link-title">Impact Analyzer</span>
+              <% end %>
+
               <%= link_to search_repository_path(@repository), class: "sidebar-link #{'is-active' if current_page?(search_repository_path(@repository))}" do %>
                 <span class="sidebar-link-title">Search Chunks</span>
               <% end %>
