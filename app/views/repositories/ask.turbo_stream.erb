@@ -13,18 +13,5 @@
 <% end %>
 
 <%= turbo_stream.replace "assistant-session-stats" do %>
-  <div class="assistant-stats" id="assistant-session-stats">
-    <article class="assistant-stat">
-      <span class="assistant-stat-label">Messages</span>
-      <span class="assistant-stat-value"><%= @messages.count %></span>
-    </article>
-    <article class="assistant-stat">
-      <span class="assistant-stat-label">Repository</span>
-      <span class="assistant-stat-value"><%= @repository.name %></span>
-    </article>
-    <article class="assistant-stat">
-      <span class="assistant-stat-label">Scope</span>
-      <span class="assistant-stat-value"><%= @repository.tracked_branch %></span>
-    </article>
-  </div>
+  <%= render "repositories/assistant/session_stats", repository: @repository, messages: @messages %>
 <% end %>
