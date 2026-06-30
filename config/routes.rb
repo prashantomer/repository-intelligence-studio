@@ -22,8 +22,9 @@ Rails.application.routes.draw do
   root "repositories#index"
   resource :settings, only: %i[edit update]
   resources :provider_call_logs, only: :index
+  resources :repository_deletion_logs, only: :index
 
-  resources :repositories, only: %i[index new create show edit update] do
+  resources :repositories, only: %i[index new create show edit update destroy] do
     post :resync, on: :member
     get :search, on: :member
     get :impact, on: :member

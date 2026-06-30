@@ -1,6 +1,29 @@
 # Repository Intelligence Studio
 
-An engineering knowledge assistant that ingests repositories, builds searchable project knowledge, and enables repository-scoped semantic search and grounded AI conversations to understand architecture, workflows, dependencies, and implementation details.
+An engineering knowledge workspace that ingests repositories, builds structured code intelligence, and enables repository-scoped search, grounded AI answers, and change-impact analysis.
+
+## Documentation
+
+### Planning
+
+- [Product plan](documents/planning/ProductPlan.md)
+- [Build action plan](documents/planning/BuildActionPlan.md)
+- [Build progress](documents/progress/BuildProgress.md)
+
+### Architecture and Flows
+
+- [Feature request/response flows](documents/architecture/FeatureFlows.md)
+
+### Feature Documentation
+
+- [Feature index](documents/features/README.md)
+- [Repository ingestion](documents/features/repository-ingestion.md#repository-ingestion)
+- [Manual re-sync](documents/features/manual-resync.md#manual-re-sync)
+- [Repository assistant](documents/features/repository-assistant.md#repository-assistant)
+- [Semantic search](documents/features/semantic-search.md#semantic-search)
+- [Impact analyzer](documents/features/impact-analyzer.md#impact-analyzer)
+- [Provider logs](documents/features/provider-logs.md#provider-logs)
+- [Centralized AI settings](documents/features/centralized-ai-settings.md#centralized-ai-settings)
 
 ## MVP Scope
 
@@ -9,8 +32,70 @@ An engineering knowledge assistant that ingests repositories, builds searchable 
 - File, chunk, entity, route, and relationship indexing
 - Semantic search over indexed repository chunks
 - Repository-scoped assistant conversations
+- Repository-scoped impact analysis
 - Centralized AI provider and model settings
 - Async assistant replies with typing-state UI
+- Provider call logging with usage and cost visibility
+
+## Feature Summary
+
+### Repository ingestion
+
+- Register a repository URL
+- Detect and track a target branch
+- Queue ingestion asynchronously
+- Build searchable repository metadata and vectors
+- Clean temporary cloned workspaces after processing
+
+See: [Repository ingestion details](documents/features/repository-ingestion.md#repository-ingestion)
+
+### Manual re-sync
+
+- Trigger rebuild of the tracked repository snapshot
+- Refresh chunks, entities, graph edges, and embeddings
+- Maintain ingestion history and latest status
+
+See: [Manual re-sync details](documents/features/manual-resync.md#manual-re-sync)
+
+### Repository assistant
+
+- Ask grounded questions against one repository at a time
+- Reuse recent thread context for follow-up questions
+- Render async replies into the chat workspace
+
+See: [Repository assistant details](documents/features/repository-assistant.md#repository-assistant)
+
+### Semantic search
+
+- Search repository chunks by semantic similarity
+- Use repository-scoped vector retrieval only
+- Return practical code-oriented result rows
+
+See: [Semantic search details](documents/features/semantic-search.md#semantic-search)
+
+### Impact analyzer
+
+- Analyze likely blast radius for a class, module, route, job, or service
+- Accept both direct entity names and natural-language impact prompts
+- Persist saved reports with graph evidence and review guidance
+
+See: [Impact analyzer details](documents/features/impact-analyzer.md#impact-analyzer)
+
+### Provider logs
+
+- Inspect assistant, embedding, and narration calls
+- Track usage, latency, status, and estimated cost
+- Use tabular history for debugging provider behavior
+
+See: [Provider logs details](documents/features/provider-logs.md#provider-logs)
+
+### Centralized AI settings
+
+- Configure assistant and embedding providers per user
+- Use provider-aware model presets with free-form model override
+- Keep AI behavior centralized across repository surfaces
+
+See: [AI settings details](documents/features/centralized-ai-settings.md#centralized-ai-settings)
 
 ## Current Stack
 
@@ -20,33 +105,6 @@ An engineering knowledge assistant that ingests repositories, builds searchable 
 - Redis
 - Sidekiq
 - Hotwire + Turbo
-
-## Core Capabilities
-
-### Repository ingestion
-
-- Register a repository URL
-- Detect and track a target branch
-- Queue ingestion asynchronously
-- Force re-sync even when commit SHA is unchanged
-- Clean cloned workspaces after ingestion completes or fails
-
-### Retrieval and assistant
-
-- Chunk indexed repository content
-- Generate and store embeddings
-- Run repository-scoped semantic retrieval
-- Ask grounded questions against one repository at a time
-- Receive async assistant responses through Turbo-driven UI updates
-
-### AI configuration
-
-- Centralized per-user assistant settings
-- Centralized per-user embedding settings
-- Current embedding storage baseline is `1024` dimensions
-- Current supported embedding providers for the active storage baseline:
-  - `local`
-  - `ollama`
 
 ## Local Setup
 
@@ -92,7 +150,8 @@ bundle exec sidekiq
 3. Wait for ingestion to complete
 4. Open `Search Chunks` and run a semantic query
 5. Open `Assistant` and ask a repository question
-6. Update centralized AI settings and re-sync if embedding settings changed
+6. Open `Impact Analyzer` and test a change query
+7. Review provider logs and AI settings
 
 ## Cleanup Task
 

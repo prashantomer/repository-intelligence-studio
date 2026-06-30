@@ -1,16 +1,6 @@
 <% content_for :title, "Provider Call Logs" %>
 
 <div class="page provider-logs-page">
-  <%= render "shared/page_header",
-             classes: "workspace-header-compact",
-             eyebrow: "Platform",
-             title: "Provider Call Logs",
-             description: "Database-backed history of assistant and embedding provider calls.",
-             actions: [
-               link_to("AI Settings", edit_settings_path, class: "button button-secondary"),
-               link_to("Repositories", repositories_path, class: "button button-secondary")
-             ] %>
-
   <section class="card provider-log-filter-card">
     <%= form_with url: provider_call_logs_path, method: :get, local: true do |form| %>
       <div class="form-grid four-up log-filter-grid">

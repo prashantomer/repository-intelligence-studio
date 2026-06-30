@@ -1,16 +1,6 @@
 <% content_for :title, "Repositories" %>
 
 <div class="page repositories-page">
-  <%= render "shared/page_header",
-             classes: "workspace-header-compact repository-page-header",
-             eyebrow: "Admin",
-             title: "Repositories",
-             description: "Manage tracked repositories and review sync state.",
-             actions: [
-               link_to("AI Settings", edit_settings_path, class: "button button-secondary"),
-               link_to("Add Repository", new_repository_path, class: "button button-primary")
-             ] %>
-
   <% if @repositories.any? %>
     <section class="card repository-index-shell">
       <div class="repository-index-toolbar">

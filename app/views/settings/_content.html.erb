@@ -1,18 +1,4 @@
 <div id="settings-content" class="page">
-  <%= render "shared/page_header",
-             classes: "workspace-header-compact",
-             eyebrow: "Admin",
-             title: "AI Settings",
-             description: "Centralized provider and model configuration.",
-             meta_items: [
-               "User: #{user.name}",
-               "Assistant: #{user.assistant_provider}",
-               "Embeddings: #{user.embedding_provider}"
-             ],
-             actions: [
-               link_to("Back to Repositories", repositories_path, class: "button button-secondary")
-             ] %>
-
   <div class="two-column-grid">
     <section class="card">
       <div class="section-title">

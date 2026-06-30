@@ -1165,3 +1165,39 @@
   - realtime log streaming is still deferred; this step is database-backed history only
   - local deterministic embeddings and local grounded answers are not logged as remote provider calls
   - apply the new migration before using the page in the running app
+
+### Step 33 — Documentation structure and feature guides
+
+- Status: `completed`
+- Goal:
+  - move planning, progress, flow, and presentation documents under a single `documents/` tree
+  - maintain feature-wise documentation with both non-technical and technical views
+  - update the main `README` so feature links point directly to the detailed documentation
+- Output:
+  - moved planning docs into `documents/planning`
+  - moved progress tracking into `documents/progress`
+  - moved request/response flow documentation into `documents/architecture`
+  - moved the presentation deck into `documents/presentations`
+  - added per-feature documentation files in `documents/features`
+  - updated `README.md` with documentation entry points and feature anchors
+- Notes:
+  - the documentation structure now separates planning, architecture, progress, presentations, and feature-level explanation cleanly
+
+### Step 34 — Hard delete repository with persistent deletion log
+
+- Status: `completed`
+- Goal:
+  - let users permanently remove a repository and all repository-scoped data
+  - retain one non-blocking deletion log record per deleted repository id
+- Output:
+  - added `RepositoryDeletionLog` persistence and migration
+  - added `Repositories::DestroyService` to snapshot counts, destroy repository-owned records, and clean workspace directories
+  - added `DELETE /repositories/:id` and repository deletion UI with destructive confirmation
+  - added read-only `Repository Deletion Logs` page and sidebar navigation entry
+  - added focused request/service specs for deletion flow coverage
+- Validation:
+  - `ruby -c` passed for new model, service, and controllers
+  - `bin/rails routes` confirmed the new deletion-log route and repository destroy route
+- Notes:
+  - local RSpec execution is blocked in this sandbox by PostgreSQL socket restrictions
+  - run migrations before using the feature in the app

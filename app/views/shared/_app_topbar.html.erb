@@ -1,0 +1,17 @@
+<section class="app-topbar">
+  <div class="topbar-copy">
+    <p class="eyebrow"><%= app_topbar_eyebrow %></p>
+    <h1><%= app_topbar_title %></h1>
+    <div class="topbar-meta">
+      <% app_topbar_meta_items.each do |item| %>
+        <span class="topbar-meta-item"><span class="topbar-meta-item-strong"><%= item %></span></span>
+      <% end %>
+    </div>
+  </div>
+
+  <% if app_topbar_actions.any? %>
+    <div class="topbar-actions">
+      <%= safe_join(app_topbar_actions) %>
+    </div>
+  <% end %>
+</section>

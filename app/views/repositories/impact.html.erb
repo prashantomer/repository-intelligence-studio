@@ -2,23 +2,6 @@
 
 <turbo-frame id="impact-page">
 <div class="page">
-  <%= render "shared/page_header",
-             classes: "workspace-header-compact",
-             eyebrow: "Impact Analyzer",
-             title: @repository.name,
-             description: "Repository-scoped dependency and change impact analysis.",
-             meta_items: [
-               "Saved reports: #{@recent_impact_reports.size}",
-               "Selected: #{@selected_impact_report&.entity_name || @impact_analysis_result&.dig(:entity)&.name || "None"}"
-             ],
-             actions: [
-               button_tag("Help", type: :button, class: "button button-secondary", data: { modal_open: "impact-help-modal" }),
-               button_tag("History", type: :button, class: "button button-secondary", data: { modal_open: "impact-history-modal" }),
-               link_to("Back to Repository", repository_path(@repository), class: "button button-secondary"),
-               link_to("Assistant", assistant_repository_path(@repository), class: "button button-secondary"),
-               link_to("Search Chunks", search_repository_path(@repository), class: "button button-secondary")
-             ] %>
-
   <div class="modal-overlay is-hidden" id="impact-help-modal" data-modal>
     <div class="modal-dialog impact-help-dialog" role="dialog" aria-modal="true" aria-labelledby="impact-help-title">
       <div class="section-title modal-header">

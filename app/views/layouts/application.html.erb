@@ -47,6 +47,10 @@
             <%= link_to provider_call_logs_path, class: "sidebar-link #{'is-active' if current_page?(provider_call_logs_path)}" do %>
               <span class="sidebar-link-title">Provider Logs</span>
             <% end %>
+
+            <%= link_to repository_deletion_logs_path, class: "sidebar-link #{'is-active' if current_page?(repository_deletion_logs_path)}" do %>
+              <span class="sidebar-link-title">Deletion Logs</span>
+            <% end %>
           </div>
 
           <% if defined?(@repository) && @repository.present? && @repository.persisted? %>
@@ -89,6 +93,7 @@
 
       <main class="app-shell">
         <div class="app-content-shell">
+          <%= render "shared/app_topbar" %>
           <%= render "shared/flash" %>
           <%= yield %>
         </div>

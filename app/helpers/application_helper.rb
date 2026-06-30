@@ -1,4 +1,87 @@
 module ApplicationHelper
+  def app_topbar_title
+    return "Repositories" if current_page?(repositories_path)
+    return "AI Settings" if current_page?(edit_settings_path)
+    return "Provider Logs" if current_page?(provider_call_logs_path)
+    return "Repository Deletion Logs" if current_page?(repository_deletion_logs_path)
+    return "Add Repository" if current_page?(new_repository_path)
+
+    if defined?(@repository) && @repository.present? && current_page?(edit_repository_path(@repository))
+      return "Edit Repository"
+    end
+
+    return @repository.name if defined?(@repository) && @repository.present?
+
+    "Repositories"
+  end
+
+  def app_topbar_eyebrow
+    return "Repository Assistant" if defined?(@repository) && @repository.present? && current_page?(assistant_repository_path(@repository))
+    return "Semantic Search" if defined?(@repository) && @repository.present? && current_page?(search_repository_path(@repository))
+    return "Impact Analyzer" if defined?(@repository) && @repository.present? && current_page?(impact_repository_path(@repository))
+    return "Repository Settings" if defined?(@repository) && @repository.present? && current_page?(edit_repository_path(@repository))
+    return "Repository Workspace" if defined?(@repository) && @repository.present?
+    "Workspace"
+  end
+
+  def app_topbar_meta_items
+    if defined?(@repository) && @repository.present? && current_page?(impact_repository_path(@repository))
+      [
+        "Saved reports: #{@recent_impact_reports&.size || 0}",
+        "Selected: #{@selected_impact_report&.entity_name || @impact_analysis_result&.dig(:entity)&.name || "None"}"
+      ]
+    elsif defined?(@repository) && @repository.present? && current_page?(assistant_repository_path(@repository))
+      [
+        @repository.assistant_provider,
+        @repository.assistant_model,
+        @conversation&.title || "New conversation"
+      ]
+    elsif defined?(@repository) && @repository.present? && current_page?(search_repository_path(@repository))
+      [
+        @repository.embedding_provider,
+        @repository.embedding_model,
+        "Results: #{@results&.size || 0}"
+      ]
+    elsif defined?(@repository) && @repository.present?
+      [
+        @repository.tracked_branch,
+        @repository.status.to_s.humanize,
+        @repository.provider.to_s
+      ]
+    else
+      [
+        current_user.name,
+        current_user.assistant_provider.to_s.humanize,
+        current_user.embedding_provider.to_s.humanize
+      ]
+    end
+  end
+
+  def app_topbar_actions
+    actions = []
+
+    if current_page?(repositories_path)
+      actions << link_to("Add Repository", new_repository_path, class: "button button-primary")
+    elsif defined?(@repository) && @repository.present? && current_page?(repository_path(@repository))
+      actions << link_to("Edit Repo Config", edit_repository_path(@repository), class: "button button-secondary")
+      actions << button_to("Re-sync", resync_repository_path(@repository), method: :post, class: "button button-primary")
+      actions << button_to("Delete Repository",
+                           repository_path(@repository),
+                           method: :delete,
+                           class: "button button-danger",
+                           form: {
+                             data: {
+                               turbo_confirm: "Delete this repository permanently? This removes ingestions, files, chunks, entities, chats, reports, provider logs, audit history, and temp workspaces."
+                             }
+                           })
+    elsif defined?(@repository) && @repository.present? && current_page?(impact_repository_path(@repository))
+      actions << button_tag("Help", type: :button, class: "button button-secondary", data: { modal_open: "impact-help-modal" })
+      actions << button_tag("History", type: :button, class: "button button-secondary", data: { modal_open: "impact-history-modal" })
+    end
+
+    actions
+  end
+
   def render_assistant_message(content)
     lines = content.to_s.gsub("\r\n", "\n").lines
     nodes = []

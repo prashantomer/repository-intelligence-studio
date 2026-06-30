@@ -1,12 +1,6 @@
 <% content_for :title, "New Repository" %>
 
 <div class="page narrow-page">
-  <%= render "shared/page_header",
-             classes: "workspace-header-compact",
-             eyebrow: "Admin",
-             title: "Add Repository",
-             description: "Register a public repository for ingestion and grounded Q&A." %>
-
   <section class="card">
     <%= render "form", repository: @repository %>
   </section>

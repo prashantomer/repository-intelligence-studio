@@ -15,6 +15,7 @@ class User < ApplicationRecord
   has_many :repositories, dependent: :nullify
   has_many :conversations, dependent: :nullify
   has_many :provider_call_logs, dependent: :destroy
+  has_many :repository_deletion_logs, dependent: :nullify
 
   attribute :assistant_provider, :string
   attribute :assistant_model, :string

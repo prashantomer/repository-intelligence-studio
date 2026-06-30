@@ -1,23 +1,6 @@
 <% recent_impact_reports ||= [] %>
 
 <div id="repository-show-content" class="page">
-  <%= render "shared/page_header",
-             eyebrow: "Repository",
-             title: repository.name,
-             description: repository.github_url,
-             meta_items: [
-               "Status: #{repository.status.humanize}",
-               "Tracked branch: #{repository.tracked_branch}",
-               "Assistant: #{repository.assistant_provider}",
-               "Embeddings: #{repository.embedding_provider}"
-             ],
-             actions: [
-               link_to("Back to Repositories", repositories_path, class: "button button-secondary"),
-               link_to("Edit Repo Config", edit_repository_path(repository), class: "button button-secondary"),
-               link_to("Impact Analyzer", impact_repository_path(repository), class: "button button-secondary"),
-               button_to("Re-sync", resync_repository_path(repository), method: :post, class: "button button-primary")
-             ] %>
-
   <div class="repository-overview-stack">
     <section class="card repository-overview-panel">
       <div class="section-title">

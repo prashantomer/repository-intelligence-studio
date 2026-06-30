@@ -1809,6 +1809,17 @@ body.modal-open {
   box-shadow: var(--shadow-soft);
 }
 
+.button-danger {
+  border-color: #7f1d1d;
+  background: linear-gradient(180deg, #b91c1c 0%, #7f1d1d 100%);
+  color: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.button-danger:hover {
+  background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
+}
+
 .button-wide {
   width: 100%;
 }

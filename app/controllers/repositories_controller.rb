@@ -1,5 +1,6 @@
 class RepositoriesController < ApplicationController
-  before_action :set_repository, only: %i[show edit update resync search impact assistant ask]
+  before_action :set_repository, only: %i[show edit update destroy resync search impact assistant ask]
+  rescue_from ActiveRecord::RecordNotFound, with: :handle_record_not_found
 
   def index
     @repositories = current_user.repositories.recent_first
@@ -33,6 +34,16 @@ class RepositoriesController < ApplicationController
       redirect_to @repository, notice: "Repository settings updated."
     else
       render :edit, status: :unprocessable_entity
+    end
+  end
+
+  def destroy
+    result = Repositories::DestroyService.call(repository: @repository)
+
+    if result.success?
+      redirect_to repositories_path, notice: "Repository deleted permanently."
+    else
+      redirect_to repositories_path, alert: result.error.to_s
     end
   end
 
@@ -104,6 +115,14 @@ class RepositoriesController < ApplicationController
 
   def set_repository
     @repository = current_user.repositories.find(params[:id])
+  end
+
+  def handle_record_not_found
+    if action_name == "destroy"
+      redirect_to repositories_path, alert: "Repository was already removed."
+    else
+      raise ActiveRecord::RecordNotFound
+    end
   end
 
   def load_repository_dashboard_data
