@@ -1,6 +1,125 @@
-<% recent_impact_reports ||= [] %>
-
 <div id="repository-show-content" class="page">
+  <div class="modal-overlay is-hidden" id="repository-ingestion-history-modal" data-modal>
+    <div class="modal-dialog impact-help-dialog repository-ingestion-history-dialog" role="dialog" aria-modal="true" aria-labelledby="repository-ingestion-history-title">
+      <div class="section-title modal-header">
+        <div>
+          <h2 id="repository-ingestion-history-title">Ingestion History</h2>
+          <p class="page-copy">Recent sync runs for this repository.</p>
+        </div>
+        <button type="button" class="button button-secondary button-compact" data-modal-close="repository-ingestion-history-modal">Close</button>
+      </div>
+
+      <div class="repository-ingestion-history-content">
+        <div class="metrics-grid repository-ingestion-history-stats">
+          <article class="metric">
+            <span class="metric-label">Runs</span>
+            <span class="metric-value"><%= recent_ingestions.size %></span>
+          </article>
+          <article class="metric">
+            <span class="metric-label">Completed</span>
+            <span class="metric-value"><%= recent_ingestions.count(&:completed?) %></span>
+          </article>
+          <article class="metric">
+            <span class="metric-label">Failed</span>
+            <span class="metric-value"><%= recent_ingestions.count(&:failed?) %></span>
+          </article>
+          <article class="metric">
+            <span class="metric-label">Active</span>
+            <span class="metric-value"><%= recent_ingestions.count(&:active?) %></span>
+          </article>
+          <article class="metric">
+            <span class="metric-label">Forced Rebuilds</span>
+            <span class="metric-value"><%= recent_ingestions.count(&:force_rebuild) %></span>
+          </article>
+        </div>
+
+        <div class="table-scroll audit-log-table-shell impact-help-table-shell ingestion-history-table-shell">
+        <% if recent_ingestions.any? %>
+          <table class="data-table audit-log-table ingestion-history-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Status</th>
+                <th>Branch</th>
+                <th>Mode</th>
+                <th>Commit SHA</th>
+                <th>Started</th>
+                <th>Finished</th>
+                <th>Duration</th>
+                <th>Error</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% recent_ingestions.each do |ingestion| %>
+                <tr>
+                  <td><%= ingestion.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+                  <td><span class="status-pill status-<%= ingestion.status %>"><%= ingestion.status.humanize %></span></td>
+                  <td><%= ingestion.branch_name %></td>
+                  <td><%= ingestion.force_rebuild? ? "Forced" : "Normal" %></td>
+                  <td><span class="table-code-cell"><%= ingestion.commit_sha.presence || "Not available" %></span></td>
+                  <td><%= ingestion.started_at ? ingestion.started_at.strftime("%Y-%m-%d %H:%M") : "Not started" %></td>
+                  <td><%= ingestion.finished_at ? ingestion.finished_at.strftime("%Y-%m-%d %H:%M") : "Not finished" %></td>
+                  <td>
+                    <% if ingestion.started_at && ingestion.finished_at %>
+                      <%= distance_of_time_in_words(ingestion.started_at, ingestion.finished_at) %>
+                    <% else %>
+                      —
+                    <% end %>
+                  </td>
+                  <td><%= ingestion.error_message.presence || "None" %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% else %>
+          <section class="empty-state workspace-empty overview-empty-state">
+            <h2>No ingestion history yet</h2>
+            <p>Completed and failed sync runs will appear here once repository processing starts.</p>
+          </section>
+        <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay is-hidden" id="repository-audit-log-modal" data-modal>
+    <div class="modal-dialog impact-help-dialog" role="dialog" aria-modal="true" aria-labelledby="repository-audit-log-title">
+      <div class="section-title modal-header">
+        <div>
+          <h2 id="repository-audit-log-title">Audit Log</h2>
+          <p class="page-copy">System-recorded repository events.</p>
+        </div>
+        <button type="button" class="button button-secondary button-compact" data-modal-close="repository-audit-log-modal">Close</button>
+      </div>
+
+      <div class="table-scroll audit-log-table-shell impact-help-table-shell">
+        <% if recent_audit_logs.any? %>
+          <table class="data-table audit-log-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Event</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% recent_audit_logs.each do |log| %>
+                <tr>
+                  <td><%= log.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+                  <td><%= log.message.presence || log.event %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% else %>
+          <section class="empty-state workspace-empty overview-empty-state">
+            <h2>No audit events yet</h2>
+            <p>System activity will appear here as this repository is synced and queried.</p>
+          </section>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
   <div class="repository-overview-stack">
     <section class="card repository-overview-panel">
       <div class="section-title">
@@ -43,429 +162,83 @@
     </section>
 
     <section class="card repository-overview-panel">
-      <div class="repository-overview-panel-stack">
-        <section class="repository-overview-panel-section">
-          <div class="section-title">
-            <div>
-              <h2>Latest Ingestion</h2>
-              <p class="page-copy">Most recent sync execution status and commit snapshot.</p>
-            </div>
-          </div>
+      <div class="section-title">
+        <div>
+          <h2>Repository Stats</h2>
+          <p class="page-copy">Indexed footprint and dependency graph totals for this repository snapshot.</p>
+        </div>
+      </div>
 
-          <% if latest_ingestion.present? %>
-            <dl class="meta-grid">
-              <div>
-                <dt>Status</dt>
-                <dd><span class="status-pill status-<%= latest_ingestion.status %>"><%= latest_ingestion.status.humanize %></span></dd>
-              </div>
-              <div>
-                <dt>Branch</dt>
-                <dd><%= latest_ingestion.branch_name %></dd>
-              </div>
-              <div>
-                <dt>Commit SHA</dt>
-                <dd><%= latest_ingestion.commit_sha.presence || "Not available" %></dd>
-              </div>
-              <div>
-                <dt>Started</dt>
-                <dd><%= latest_ingestion.started_at ? latest_ingestion.started_at.strftime("%Y-%m-%d %H:%M") : "Not started" %></dd>
-              </div>
-              <div>
-                <dt>Finished</dt>
-                <dd><%= latest_ingestion.finished_at ? latest_ingestion.finished_at.strftime("%Y-%m-%d %H:%M") : "Not finished" %></dd>
-              </div>
-              <div>
-                <dt>Error</dt>
-                <dd><%= latest_ingestion.error_message.presence || "None" %></dd>
-              </div>
-            </dl>
-          <% else %>
-            <section class="empty-state workspace-empty overview-empty-state">
-              <h2>No ingestion run yet</h2>
-              <p>Queue the first re-sync to build repository chunks, embeddings, and grounded assistant context.</p>
-            </section>
-          <% end %>
-        </section>
-
-        <section class="repository-overview-panel-section">
-          <div class="section-title">
-            <div>
-              <h2>Recent Ingestions</h2>
-              <p class="page-copy">Recent sync history for this repository.</p>
-            </div>
-          </div>
-
-          <% if recent_ingestions.any? %>
-            <div class="timeline-list">
-              <% recent_ingestions.each do |ingestion| %>
-                <article class="timeline-item">
-                  <span class="timeline-title"><%= "#{ingestion.status.humanize} · #{ingestion.branch_name}" %></span>
-                  <span class="timeline-meta"><%= ingestion.created_at.strftime("%Y-%m-%d %H:%M") %></span>
-                </article>
-              <% end %>
-            </div>
-          <% else %>
-            <section class="empty-state workspace-empty overview-empty-state">
-              <h2>No ingestion history yet</h2>
-              <p>Completed and failed sync runs will appear here once repository processing starts.</p>
-            </section>
-          <% end %>
-        </section>
+      <div class="metrics-grid">
+        <article class="metric">
+          <span class="metric-label">Files</span>
+          <span class="metric-value"><%= code_files_count %></span>
+        </article>
+        <article class="metric">
+          <span class="metric-label">Chunks</span>
+          <span class="metric-value"><%= code_chunks_count %></span>
+        </article>
+        <article class="metric">
+          <span class="metric-label">Entities</span>
+          <span class="metric-value"><%= entities_count %></span>
+        </article>
+        <article class="metric">
+          <span class="metric-label">Relations</span>
+          <span class="metric-value"><%= relationships_count %></span>
+        </article>
+        <article class="metric">
+          <span class="metric-label">Routes</span>
+          <span class="metric-value"><%= routes_count %></span>
+        </article>
+        <article class="metric">
+          <span class="metric-label">Dependency Edges</span>
+          <span class="metric-value"><%= dependency_edges_count %></span>
+        </article>
       </div>
     </section>
 
     <section class="card repository-overview-panel">
       <div class="section-title">
         <div>
-          <h2>Dependency Graph</h2>
-          <p class="page-copy">Normalized route and entity relationships ready for impact analysis.</p>
+          <h2>Latest Ingestion</h2>
+          <p class="page-copy">Most recent sync execution status and commit snapshot.</p>
         </div>
       </div>
 
-      <dl class="meta-grid">
-        <div>
-          <dt>Total edges</dt>
-          <dd><%= dependency_edges_count %></dd>
-        </div>
-        <div>
-          <dt>Routes</dt>
-          <dd><%= routes_count %></dd>
-        </div>
-        <div>
-          <dt>Entity relationships</dt>
-          <dd><%= relationships_count %></dd>
-        </div>
-      </dl>
-
-      <%= form_with url: repository_path(repository), method: :get, local: true do |form| %>
-        <div class="form-grid dependency-lookup-grid">
-          <div class="field">
-            <%= form.label :dependency_entity, "Dependency lookup" %>
-            <%= form.text_field :dependency_entity,
-                                value: dependency_lookup_query,
-                                placeholder: "Entity name, e.g. HoldingsController or Folio" %>
-            <span class="field-hint">Query graph edges for upstream, downstream, routes, jobs, and related files.</span>
+      <% if latest_ingestion.present? %>
+        <dl class="meta-grid">
+          <div>
+            <dt>Status</dt>
+            <dd><span class="status-pill status-<%= latest_ingestion.status %>"><%= latest_ingestion.status.humanize %></span></dd>
           </div>
-          <div class="button-row">
-            <%= form.submit "Analyze", class: "button button-secondary" %>
+          <div>
+            <dt>Branch</dt>
+            <dd><%= latest_ingestion.branch_name %></dd>
           </div>
-        </div>
-      <% end %>
-
-      <% if dependency_edge_breakdown.present? %>
-        <div class="table-scroll audit-log-table-shell">
-          <table class="data-table audit-log-table">
-            <thead>
-              <tr>
-                <th>Edge Type</th>
-                <th>Count</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% dependency_edge_breakdown.each do |edge_type, count| %>
-                <tr>
-                  <td><%= edge_type.humanize %></td>
-                  <td><%= count %></td>
-                </tr>
-              <% end %>
-            </tbody>
-          </table>
-        </div>
+          <div>
+            <dt>Commit SHA</dt>
+            <dd><%= latest_ingestion.commit_sha.presence || "Not available" %></dd>
+          </div>
+          <div>
+            <dt>Started</dt>
+            <dd><%= latest_ingestion.started_at ? latest_ingestion.started_at.strftime("%Y-%m-%d %H:%M") : "Not started" %></dd>
+          </div>
+          <div>
+            <dt>Finished</dt>
+            <dd><%= latest_ingestion.finished_at ? latest_ingestion.finished_at.strftime("%Y-%m-%d %H:%M") : "Not finished" %></dd>
+          </div>
+          <div>
+            <dt>Error</dt>
+            <dd><%= latest_ingestion.error_message.presence || "None" %></dd>
+          </div>
+        </dl>
       <% else %>
         <section class="empty-state workspace-empty overview-empty-state">
-          <h2>No dependency edges yet</h2>
-          <p>Run ingestion to normalize routes and entity references into graph edges.</p>
-        </section>
-      <% end %>
-
-      <% if dependency_lookup_error.present? %>
-        <section class="empty-state workspace-empty overview-empty-state">
-          <h2>Dependency lookup unavailable</h2>
-          <p><%= dependency_lookup_error %></p>
-        </section>
-      <% elsif dependency_lookup_result.present? %>
-        <% entity = dependency_lookup_result.fetch(:entity) %>
-        <section class="card dependency-lookup-result-card">
-          <div class="section-title">
-            <div>
-              <h2><%= entity.name %></h2>
-              <p class="page-copy"><%= "#{entity.entity_type.humanize} · #{entity.code_file.path}" %></p>
-            </div>
-          </div>
-
-          <dl class="meta-grid">
-            <div>
-              <dt>Direct upstream</dt>
-              <dd><%= dependency_lookup_result.fetch(:direct_upstream_edge_count) %></dd>
-            </div>
-            <div>
-              <dt>Direct downstream</dt>
-              <dd><%= dependency_lookup_result.fetch(:direct_downstream_edge_count) %></dd>
-            </div>
-            <div>
-              <dt>Routes touching entity</dt>
-              <dd><%= dependency_lookup_result.fetch(:routes).size %></dd>
-            </div>
-            <div>
-              <dt>Jobs touching entity</dt>
-              <dd><%= dependency_lookup_result.fetch(:jobs).size %></dd>
-            </div>
-            <div>
-              <dt>Related files</dt>
-              <dd><%= dependency_lookup_result.fetch(:related_files).size %></dd>
-            </div>
-          </dl>
-
-          <div class="dependency-lookup-columns">
-            <div class="stack-list">
-              <div class="section-title">
-                <div>
-                  <h2>Upstream Dependencies</h2>
-                  <p class="page-copy">Entities this one depends on or references.</p>
-                </div>
-              </div>
-              <% if dependency_lookup_result.fetch(:upstream_entities).any? %>
-                <div class="timeline-list">
-                  <% dependency_lookup_result.fetch(:upstream_entities).each do |related_entity| %>
-                    <article class="timeline-item">
-                      <span class="timeline-title"><%= related_entity.name %></span>
-                      <span class="timeline-meta"><%= "#{related_entity.entity_type.humanize} · #{related_entity.code_file.path}" %></span>
-                    </article>
-                  <% end %>
-                </div>
-              <% else %>
-                <p class="page-copy">No upstream entity edges found.</p>
-              <% end %>
-            </div>
-
-            <div class="stack-list">
-              <div class="section-title">
-                <div>
-                  <h2>Downstream Dependents</h2>
-                  <p class="page-copy">Entities that may be affected by a change here.</p>
-                </div>
-              </div>
-              <% if dependency_lookup_result.fetch(:downstream_entities).any? %>
-                <div class="timeline-list">
-                  <% dependency_lookup_result.fetch(:downstream_entities).each do |related_entity| %>
-                    <article class="timeline-item">
-                      <span class="timeline-title"><%= related_entity.name %></span>
-                      <span class="timeline-meta"><%= "#{related_entity.entity_type.humanize} · #{related_entity.code_file.path}" %></span>
-                    </article>
-                  <% end %>
-                </div>
-              <% else %>
-                <p class="page-copy">No downstream entity edges found.</p>
-              <% end %>
-            </div>
-          </div>
-
-          <div class="dependency-lookup-columns">
-            <div class="stack-list">
-              <div class="section-title">
-                <div>
-                  <h2>Routes</h2>
-                  <p class="page-copy">HTTP endpoints that flow into this area of the graph.</p>
-                </div>
-              </div>
-              <% if dependency_lookup_result.fetch(:routes).any? %>
-                <div class="timeline-list">
-                  <% dependency_lookup_result.fetch(:routes).each do |route| %>
-                    <article class="timeline-item">
-                      <span class="timeline-title"><%= "#{route.http_method} #{route.path}" %></span>
-                      <span class="timeline-meta"><%= [route.controller_name, route.action_name].compact.join("#") %></span>
-                    </article>
-                  <% end %>
-                </div>
-              <% else %>
-                <p class="page-copy">No route edges found.</p>
-              <% end %>
-            </div>
-
-            <div class="stack-list">
-              <div class="section-title">
-                <div>
-                  <h2>Jobs & Files</h2>
-                  <p class="page-copy">Background jobs and touched files related to this entity.</p>
-                </div>
-              </div>
-              <div class="timeline-list">
-                <% if dependency_lookup_result.fetch(:jobs).any? %>
-                  <% dependency_lookup_result.fetch(:jobs).each do |job_entity| %>
-                    <article class="timeline-item">
-                      <span class="timeline-title"><%= job_entity.name %></span>
-                      <span class="timeline-meta"><%= "Job · #{job_entity.code_file.path}" %></span>
-                    </article>
-                  <% end %>
-                <% else %>
-                  <article class="timeline-item">
-                    <span class="timeline-title">No jobs found</span>
-                    <span class="timeline-meta">No job-to-entity edge found within the current traversal depth.</span>
-                  </article>
-                <% end %>
-
-                <% dependency_lookup_result.fetch(:related_files).first(8).each do |code_file| %>
-                  <article class="timeline-item">
-                    <span class="timeline-title"><%= code_file.path %></span>
-                    <span class="timeline-meta"><%= "#{code_file.language} · #{number_to_human_size(code_file.size_bytes)}" %></span>
-                  </article>
-                <% end %>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <% if impact_analysis_error.present? %>
-          <section class="empty-state workspace-empty overview-empty-state">
-            <h2>Impact analysis unavailable</h2>
-            <p><%= impact_analysis_error %></p>
-          </section>
-        <% elsif impact_analysis_result.present? %>
-          <section class="card dependency-impact-card">
-            <div class="section-title">
-              <div>
-                <h2>Impact Analysis</h2>
-                <p class="page-copy">Repository-scoped change impact estimate for <%= impact_analysis_result.fetch(:entity).name %>.</p>
-              </div>
-            </div>
-
-            <dl class="meta-grid">
-              <div>
-                <dt>Risk level</dt>
-                <dd><span class="status-pill status-impact-<%= impact_analysis_result.fetch(:risk_level) %>"><%= impact_analysis_result.fetch(:risk_level).humanize %></span></dd>
-              </div>
-              <div>
-                <dt>Affected entities</dt>
-                <dd><%= impact_analysis_result.fetch(:affected_entities).size %></dd>
-              </div>
-              <div>
-                <dt>Impacted files</dt>
-                <dd><%= impact_analysis_result.fetch(:impacted_files).size %></dd>
-              </div>
-              <div>
-                <dt>Routes</dt>
-                <dd><%= impact_analysis_result.fetch(:routes).size %></dd>
-              </div>
-              <div>
-                <dt>Jobs</dt>
-                <dd><%= impact_analysis_result.fetch(:jobs).size %></dd>
-              </div>
-            </dl>
-
-            <div class="assistant-rich-text dependency-impact-summary">
-              <%= render_assistant_message(impact_analysis_result.fetch(:summary)) %>
-            </div>
-
-            <% if impact_analysis_result.fetch(:citations).any? %>
-              <div class="assistant-citations">
-                <div class="assistant-citations-title">Retrieved evidence</div>
-                <div class="citation-list">
-                  <% impact_analysis_result.fetch(:citations).each do |citation| %>
-                    <div class="citation-item">
-                      <span class="timeline-title"><%= citation[:path] %>:<%= citation[:start_line] %>-<%= citation[:end_line] %></span>
-                      <span class="timeline-meta"><%= [citation[:entity_name], citation[:chunk_type]].compact.join(" · ") %></span>
-                    </div>
-                  <% end %>
-                </div>
-              </div>
-            <% end %>
-
-            <% if impact_analysis_result[:impact_report].present? %>
-              <div class="assistant-citations">
-                <div class="assistant-citations-title">Saved report</div>
-                <div class="citation-list">
-                  <div class="citation-item">
-                    <span class="timeline-title">Generated <%= impact_analysis_result[:impact_report].generated_at.strftime("%Y-%m-%d %H:%M") %></span>
-                    <span class="timeline-meta">Query: <%= impact_analysis_result[:impact_report].query %></span>
-                  </div>
-                </div>
-              </div>
-            <% end %>
-          </section>
-        <% end %>
-
-        <section class="card dependency-impact-card">
-          <div class="section-title">
-            <div>
-              <h2>Saved Impact Reports</h2>
-              <p class="page-copy">Recent repository-scoped impact snapshots generated from dependency analysis.</p>
-            </div>
-          </div>
-
-          <% if recent_impact_reports.any? %>
-            <div class="table-scroll audit-log-table-shell">
-              <table class="data-table audit-log-table">
-                <thead>
-                  <tr>
-                    <th>Time</th>
-                    <th>Query</th>
-                    <th>Entity</th>
-                    <th>Risk</th>
-                    <th>Affected</th>
-                    <th>Files</th>
-                    <th>Routes</th>
-                    <th>Jobs</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% recent_impact_reports.each do |report| %>
-                    <tr>
-                      <td><%= report.generated_at.strftime("%Y-%m-%d %H:%M") %></td>
-                      <td><%= report.query %></td>
-                      <td><%= report.entity_name %></td>
-                      <td><span class="status-pill status-impact-<%= report.risk_level %>"><%= report.risk_level.humanize %></span></td>
-                      <td><%= report.affected_entities_count %></td>
-                      <td><%= report.impacted_files_count %></td>
-                      <td><%= report.routes_count %></td>
-                      <td><%= report.jobs_count %></td>
-                    </tr>
-                  <% end %>
-                </tbody>
-              </table>
-            </div>
-          <% else %>
-            <section class="empty-state workspace-empty overview-empty-state">
-              <h2>No saved impact reports yet</h2>
-              <p>Run an entity analysis above to persist the first impact snapshot for this repository.</p>
-            </section>
-          <% end %>
+          <h2>No ingestion run yet</h2>
+          <p>Queue the first re-sync to build repository chunks, embeddings, and grounded assistant context.</p>
         </section>
       <% end %>
     </section>
 
-    <section class="card repository-overview-panel">
-      <div class="section-title">
-        <div>
-          <h2>Audit Log</h2>
-          <p class="page-copy">System-recorded repository events.</p>
-        </div>
-      </div>
-
-      <% if recent_audit_logs.any? %>
-        <div class="table-scroll audit-log-table-shell">
-          <table class="data-table audit-log-table">
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Event</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% recent_audit_logs.each do |log| %>
-                <tr>
-                  <td><%= log.created_at.strftime("%Y-%m-%d %H:%M") %></td>
-                  <td><%= log.message.presence || log.event %></td>
-                </tr>
-              <% end %>
-            </tbody>
-          </table>
-        </div>
-      <% else %>
-        <section class="empty-state workspace-empty overview-empty-state">
-          <h2>No audit events yet</h2>
-          <p>System activity will appear here as this repository is synced and queried.</p>
-        </section>
-      <% end %>
-    </section>
   </div>
 </div>

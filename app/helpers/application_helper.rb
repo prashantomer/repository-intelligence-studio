@@ -63,6 +63,8 @@ module ApplicationHelper
     if current_page?(repositories_path)
       actions << link_to("Add Repository", new_repository_path, class: "button button-primary")
     elsif defined?(@repository) && @repository.present? && current_page?(repository_path(@repository))
+      actions << button_tag("Ingestion History", type: :button, class: "button button-secondary", data: { modal_open: "repository-ingestion-history-modal" })
+      actions << button_tag("Audit Log", type: :button, class: "button button-secondary", data: { modal_open: "repository-audit-log-modal" })
       actions << link_to("Edit Repo Config", edit_repository_path(@repository), class: "button button-secondary")
       actions << button_to("Re-sync", resync_repository_path(@repository), method: :post, class: "button button-primary")
       actions << button_to("Delete Repository",

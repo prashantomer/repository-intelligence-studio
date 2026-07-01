@@ -1770,6 +1770,8 @@ body.modal-open {
 
 .modal-header {
   align-items: flex-start;
+  padding: 20px 20px 0;
+  margin: 0;
 }
 
 .impact-help-dialog {
@@ -1778,12 +1780,80 @@ body.modal-open {
   min-height: 0;
 }
 
+.repository-ingestion-history-dialog {
+  width: min(1180px, 100%);
+}
+
+.repository-ingestion-history-content {
+  display: grid;
+  gap: 20px;
+  padding: 0 20px 20px;
+  min-height: 0;
+}
+
+.repository-ingestion-history-stats {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 .impact-help-table-shell {
   flex: 1 1 auto;
   min-height: 0;
   max-height: calc(100vh - 180px);
   overflow: auto;
-  margin: 0 12px 12px;
+  margin: 0 20px 20px;
+}
+
+.ingestion-history-table-shell {
+  margin: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(100vh - 300px);
+}
+
+.ingestion-history-table {
+  table-layout: fixed;
+}
+
+.ingestion-history-table th,
+.ingestion-history-table td {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.table-code-cell {
+  display: inline-block;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, SF Mono, Consolas, Liberation Mono, Menlo, monospace);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 720px) {
+  .modal-overlay {
+    padding: 20px 12px 12px;
+  }
+
+  .modal-header {
+    padding: 16px 16px 0;
+  }
+
+  .impact-help-table-shell {
+    margin: 0 16px 16px;
+  }
+
+  .repository-ingestion-history-content {
+    gap: 16px;
+    padding: 0 16px 16px;
+  }
+
+  .repository-ingestion-history-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ingestion-history-table-shell {
+    max-height: calc(100vh - 280px);
+  }
 }
 
 .modal-action-row {
