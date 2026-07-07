@@ -67,13 +67,20 @@ class RepositoriesController < ApplicationController
   def search
     @query = params[:q].to_s.strip
     @results = []
-    return if @query.blank?
+    @search_hits = []
+    if @query.present?
+      result = Retrieval::SemanticSearchService.call(repository: @repository, query: @query)
+      if result.success?
+        @results = result.data
+        @search_hits = build_search_hits(@results, @query)
+      else
+        flash.now[:alert] = result.error.to_s
+      end
+    end
 
-    result = Retrieval::SemanticSearchService.call(repository: @repository, query: @query)
-    if result.success?
-      @results = result.data
-    else
-      flash.now[:alert] = result.error.to_s
+    respond_to do |format|
+      format.turbo_stream
+      format.html
     end
   end
 
@@ -199,5 +206,42 @@ class RepositoriesController < ApplicationController
       :default_branch,
       :tracked_branch
     )
+  end
+
+  def build_search_hits(chunks, query)
+    normalized_query = query.to_s.downcase.strip.sub(/\A`(.+)`\z/, "\\1")
+    query_tokens = normalized_query.scan(/[a-z0-9_:-]+/).uniq
+
+    chunks.flat_map do |chunk|
+      lines = chunk.chunk_text.to_s.lines.map(&:chomp)
+      matches = lines.each_with_index.filter_map do |line, index|
+        normalized_line = line.downcase
+        next unless normalized_line.include?(normalized_query) || query_tokens.any? { |token| normalized_line.include?(token) }
+
+        {
+          chunk:,
+          match_line_index: index,
+          match_line_number: chunk.start_line.to_i + index,
+          score: search_hit_score(normalized_line, normalized_query, query_tokens)
+        }
+      end
+
+      if matches.any?
+        matches
+      else
+        [{
+          chunk:,
+          match_line_index: 0,
+          match_line_number: chunk.start_line,
+          score: 0
+        }]
+      end
+    end.sort_by { |hit| [ -hit[:score], hit[:chunk].code_file.path.to_s, hit[:match_line_number].to_i ] }
+  end
+
+  def search_hit_score(normalized_line, normalized_query, query_tokens)
+    score = 0
+    score += 100 if normalized_line.include?(normalized_query)
+    score + query_tokens.sum { |token| normalized_line.include?(token) ? token.length : 0 }
   end
 end

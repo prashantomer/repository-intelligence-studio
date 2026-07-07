@@ -5,7 +5,7 @@
 
   <div class="assistant-layout">
     <aside class="assistant-sidebar">
-      <section class="card card-muted assistant-panel">
+      <section class="card card-muted assistant-panel assistant-panel-compact">
         <div class="section-title">
           <div>
             <h2>Session</h2>
@@ -16,7 +16,7 @@
         <%= render "repositories/assistant/session_stats", repository: @repository, messages: @messages %>
       </section>
 
-      <section class="card card-muted assistant-panel">
+      <section class="card card-muted assistant-panel assistant-panel-compact">
         <div class="section-title">
           <div>
             <h2>Good Questions</h2>
@@ -31,7 +31,7 @@
         </ol>
       </section>
 
-      <section class="card card-muted assistant-panel">
+      <section class="card card-muted assistant-panel assistant-panel-compact">
         <div class="section-title">
           <div>
             <h2>Answer Pipeline</h2>
@@ -60,7 +60,7 @@
       </section>
     </aside>
 
-    <section class="card assistant-chat-shell">
+    <section class="card assistant-chat-shell assistant-chat-shell-refined">
       <div class="assistant-chat-header">
         <div>
           <h2>Conversation</h2>

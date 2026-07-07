@@ -121,124 +121,177 @@
   </div>
 
   <div class="repository-overview-stack">
-    <section class="card repository-overview-panel">
-      <div class="section-title">
-        <div>
-          <h2>Repository Details</h2>
-          <p class="page-copy">Core tracking, sync scope, and source metadata.</p>
-        </div>
+    <section class="card repository-workspace-summary">
+      <div class="repository-workspace-summary-copy">
+        <h2><%= repository.name %></h2>
+        <p class="card-url repository-workspace-summary-url"><%= repository.github_url %></p>
       </div>
 
-      <dl class="meta-grid">
-        <div>
-          <dt>Status</dt>
-          <dd><span class="status-pill status-<%= repository.status %>"><%= repository.status.humanize %></span></dd>
-        </div>
-        <div>
-          <dt>Tracked branch</dt>
-          <dd><%= repository.tracked_branch %></dd>
-        </div>
-        <div>
-          <dt>Default branch</dt>
-          <dd><%= repository.default_branch %></dd>
-        </div>
-        <div>
-          <dt>Visibility</dt>
-          <dd><%= repository.visibility.humanize %></dd>
-        </div>
-        <div>
-          <dt>Provider</dt>
-          <dd><%= repository.provider %></dd>
-        </div>
-        <div>
-          <dt>Last commit SHA</dt>
-          <dd><%= repository.last_commit_sha.presence || "Not available" %></dd>
-        </div>
-        <div>
-          <dt>Last ingested at</dt>
-          <dd><%= repository.last_ingested_at ? repository.last_ingested_at.strftime("%Y-%m-%d %H:%M") : "Not yet" %></dd>
-        </div>
-      </dl>
-    </section>
-
-    <section class="card repository-overview-panel">
-      <div class="section-title">
-        <div>
-          <h2>Repository Stats</h2>
-          <p class="page-copy">Indexed footprint and dependency graph totals for this repository snapshot.</p>
-        </div>
-      </div>
-
-      <div class="metrics-grid">
-        <article class="metric">
-          <span class="metric-label">Files</span>
-          <span class="metric-value"><%= code_files_count %></span>
-        </article>
-        <article class="metric">
-          <span class="metric-label">Chunks</span>
-          <span class="metric-value"><%= code_chunks_count %></span>
-        </article>
-        <article class="metric">
-          <span class="metric-label">Entities</span>
-          <span class="metric-value"><%= entities_count %></span>
-        </article>
-        <article class="metric">
-          <span class="metric-label">Relations</span>
-          <span class="metric-value"><%= relationships_count %></span>
-        </article>
-        <article class="metric">
-          <span class="metric-label">Routes</span>
-          <span class="metric-value"><%= routes_count %></span>
-        </article>
-        <article class="metric">
-          <span class="metric-label">Dependency Edges</span>
-          <span class="metric-value"><%= dependency_edges_count %></span>
-        </article>
+      <div class="meta-inline repository-workspace-meta">
+        <span><strong>Status:</strong> <%= repository.status.humanize %></span>
+        <span><strong>Branch:</strong> <%= repository.tracked_branch %></span>
+        <span><strong>Visibility:</strong> <%= repository.visibility.humanize %></span>
+        <span><strong>Provider:</strong> <%= repository.provider %></span>
+        <span><strong>Assistant:</strong> <%= repository.assistant_provider %></span>
+        <span><strong>Embeddings:</strong> <%= repository.embedding_provider %></span>
+        <span><strong>Last sync:</strong> <%= repository.last_ingested_at ? repository.last_ingested_at.strftime("%Y-%m-%d %H:%M") : "Not yet" %></span>
       </div>
     </section>
 
-    <section class="card repository-overview-panel">
-      <div class="section-title">
-        <div>
-          <h2>Latest Ingestion</h2>
-          <p class="page-copy">Most recent sync execution status and commit snapshot.</p>
-        </div>
-      </div>
+    <section class="metrics-grid repository-overview-metrics-grid">
+      <article class="card metric repository-overview-metric-card">
+        <span class="metric-label">Files</span>
+        <span class="metric-value"><%= code_files_count %></span>
+      </article>
+      <article class="card metric repository-overview-metric-card">
+        <span class="metric-label">Chunks</span>
+        <span class="metric-value"><%= code_chunks_count %></span>
+      </article>
+      <article class="card metric repository-overview-metric-card">
+        <span class="metric-label">Entities</span>
+        <span class="metric-value"><%= entities_count %></span>
+      </article>
+      <article class="card metric repository-overview-metric-card">
+        <span class="metric-label">Relations</span>
+        <span class="metric-value"><%= relationships_count %></span>
+      </article>
+    </section>
 
-      <% if latest_ingestion.present? %>
-        <dl class="meta-grid">
-          <div>
-            <dt>Status</dt>
-            <dd><span class="status-pill status-<%= latest_ingestion.status %>"><%= latest_ingestion.status.humanize %></span></dd>
+    <section class="overview-layout repository-overview-layout-refined">
+      <div class="overview-main">
+        <section class="card repository-overview-panel">
+          <div class="section-title">
+            <div>
+              <h2>Latest Ingestion</h2>
+              <p class="page-copy">Most recent sync execution status and commit snapshot.</p>
+            </div>
           </div>
-          <div>
-            <dt>Branch</dt>
-            <dd><%= latest_ingestion.branch_name %></dd>
-          </div>
-          <div>
-            <dt>Commit SHA</dt>
-            <dd><%= latest_ingestion.commit_sha.presence || "Not available" %></dd>
-          </div>
-          <div>
-            <dt>Started</dt>
-            <dd><%= latest_ingestion.started_at ? latest_ingestion.started_at.strftime("%Y-%m-%d %H:%M") : "Not started" %></dd>
-          </div>
-          <div>
-            <dt>Finished</dt>
-            <dd><%= latest_ingestion.finished_at ? latest_ingestion.finished_at.strftime("%Y-%m-%d %H:%M") : "Not finished" %></dd>
-          </div>
-          <div>
-            <dt>Error</dt>
-            <dd><%= latest_ingestion.error_message.presence || "None" %></dd>
-          </div>
-        </dl>
-      <% else %>
-        <section class="empty-state workspace-empty overview-empty-state">
-          <h2>No ingestion run yet</h2>
-          <p>Queue the first re-sync to build repository chunks, embeddings, and grounded assistant context.</p>
+
+          <% if latest_ingestion.present? %>
+            <dl class="meta-grid">
+              <div>
+                <dt>Status</dt>
+                <dd><span class="status-pill status-<%= latest_ingestion.status %>"><%= latest_ingestion.status.humanize %></span></dd>
+              </div>
+              <div>
+                <dt>Branch</dt>
+                <dd><%= latest_ingestion.branch_name %></dd>
+              </div>
+              <div>
+                <dt>Commit SHA</dt>
+                <dd><%= latest_ingestion.commit_sha.presence || "Not available" %></dd>
+              </div>
+              <div>
+                <dt>Started</dt>
+                <dd><%= latest_ingestion.started_at ? latest_ingestion.started_at.strftime("%Y-%m-%d %H:%M") : "Not started" %></dd>
+              </div>
+              <div>
+                <dt>Finished</dt>
+                <dd><%= latest_ingestion.finished_at ? latest_ingestion.finished_at.strftime("%Y-%m-%d %H:%M") : "Not finished" %></dd>
+              </div>
+              <div>
+                <dt>Error</dt>
+                <dd><%= latest_ingestion.error_message.presence || "None" %></dd>
+              </div>
+            </dl>
+          <% else %>
+            <section class="empty-state workspace-empty overview-empty-state">
+              <h2>No ingestion run yet</h2>
+              <p>Queue the first re-sync to build repository chunks, embeddings, and grounded assistant context.</p>
+            </section>
+          <% end %>
         </section>
-      <% end %>
-    </section>
 
+        <section class="card repository-overview-panel">
+          <div class="section-title">
+            <div>
+              <h2>Repository Details</h2>
+              <p class="page-copy">Core tracking, sync scope, and source metadata.</p>
+            </div>
+          </div>
+
+          <dl class="meta-grid">
+            <div>
+              <dt>Default branch</dt>
+              <dd><%= repository.default_branch %></dd>
+            </div>
+            <div>
+              <dt>Tracked branch</dt>
+              <dd><%= repository.tracked_branch %></dd>
+            </div>
+            <div>
+              <dt>Visibility</dt>
+              <dd><%= repository.visibility.humanize %></dd>
+            </div>
+            <div>
+              <dt>Provider</dt>
+              <dd><%= repository.provider %></dd>
+            </div>
+            <div>
+              <dt>Last commit SHA</dt>
+              <dd><%= repository.last_commit_sha.presence || "Not available" %></dd>
+            </div>
+            <div>
+              <dt>Last ingested at</dt>
+              <dd><%= repository.last_ingested_at ? repository.last_ingested_at.strftime("%Y-%m-%d %H:%M") : "Not yet" %></dd>
+            </div>
+          </dl>
+        </section>
+      </div>
+
+      <aside class="overview-side">
+        <section class="card repository-overview-panel">
+          <div class="section-title">
+            <div>
+              <h2>AI Configuration</h2>
+              <p class="page-copy">Current assistant and embedding runtime selection.</p>
+            </div>
+          </div>
+
+          <dl class="meta-grid compact-meta-grid">
+            <div>
+              <dt>Assistant provider</dt>
+              <dd><%= repository.assistant_provider %></dd>
+            </div>
+            <div>
+              <dt>Assistant model</dt>
+              <dd><%= repository.assistant_model %></dd>
+            </div>
+            <div>
+              <dt>Embedding provider</dt>
+              <dd><%= repository.embedding_provider %></dd>
+            </div>
+            <div>
+              <dt>Embedding model</dt>
+              <dd><%= repository.embedding_model %></dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="card repository-overview-panel">
+          <div class="section-title">
+            <div>
+              <h2>Graph Snapshot</h2>
+              <p class="page-copy">Indexed relationship surface available to search and impact analysis.</p>
+            </div>
+          </div>
+
+          <dl class="meta-grid compact-meta-grid">
+            <div>
+              <dt>Routes</dt>
+              <dd><%= routes_count %></dd>
+            </div>
+            <div>
+              <dt>Dependency edges</dt>
+              <dd><%= dependency_edges_count %></dd>
+            </div>
+            <div>
+              <dt>Entity relations</dt>
+              <dd><%= relationships_count %></dd>
+            </div>
+          </dl>
+        </section>
+      </aside>
+    </section>
   </div>
 </div>

@@ -1201,3 +1201,147 @@
 - Notes:
   - local RSpec execution is blocked in this sandbox by PostgreSQL socket restrictions
   - run migrations before using the feature in the app
+
+### Step 35 — Provider logs workspace refresh
+
+- Status: `completed`
+- Goal:
+  - bring the provider logs screen in line with the current workspace-oriented redesign
+  - improve scanability of filters, summary counts, and execution details without changing backend behavior
+- Output:
+  - reworked `Provider Logs` into a denser operational page with a dedicated filter card and summary metric row
+  - added visible-call, success, failed, assistant, and embedding counts above the table
+  - tightened the log history panel into a full-height table workspace with improved column behavior
+  - refined detail inspection styling so request/response payload inspection remains available but less visually noisy
+  - added responsive behavior for the new summary metric row on narrower screens
+- Validation:
+  - ERB parse check passed for `app/views/provider_call_logs/index.html.erb`
+  - `ruby -c app/helpers/application_helper.rb` passed
+- Notes:
+  - this step is UI-only; filters, data source, and log semantics remain unchanged
+  - impact-analysis provider calls still appear via the existing operation filter where present
+
+### Step 36 — Shared shell and topbar refinement
+
+- Status: `completed`
+- Goal:
+  - move the app closer to the new reference by strengthening the shared shell before another page-specific pass
+  - improve sidebar hierarchy, topbar context, and global surface consistency without changing behavior
+- Output:
+  - updated global design tokens toward the lighter indigo workspace style
+  - widened the sidebar shell, increased main content padding, and restored rounded shared surfaces
+  - rebuilt sidebar brand lockup with stronger visual hierarchy and richer nav item descriptions
+  - improved current-repository sidebar card with inline status visibility
+  - added topbar subtitle support and page-specific descriptive copy through `ApplicationHelper`
+  - converted topbar metadata into compact pill items and softened shared cards, forms, chat surfaces, and tables
+- Validation:
+  - `ruby -c app/helpers/application_helper.rb` passed
+  - ERB parse checks passed for `app/views/layouts/application.html.erb` and `app/views/shared/_app_topbar.html.erb`
+- Notes:
+  - this is still a shared-foundation step; repositories, assistant, settings, search, and impact pages will need another page-level pass to fully match the reference
+
+### Step 37 — Repositories index reference alignment
+
+- Status: `completed`
+- Goal:
+  - bring the repositories landing screen closer to the reference table-first operational workspace
+  - improve top-level repository scanability using metric tiles and a denser inventory table
+- Output:
+  - added repository summary metrics for total, completed, failed, pending, and skipped repositories
+  - reworked the index body into a cleaner inventory card with subtitle and compact metadata strip
+  - replaced the old repository row grid with a structured operational data table
+  - aligned columns around repository, branch, source, indexed counts, sync status, and last synced snapshot
+  - added responsive metric behavior and retained the existing empty state for first-use flow
+- Validation:
+  - ERB parse check passed for `app/views/repositories/index.html.erb`
+- Notes:
+  - this step is visual-only; no search/filter backend behavior was added yet
+  - topbar still provides the primary page title and add action while the page focuses on the table workspace
+
+### Step 38 — Repository details workspace alignment
+
+- Status: `completed`
+- Goal:
+  - reshape the repository overview into a clearer operational workspace under the new reference system
+  - surface repository metadata, indexed counts, and latest ingestion status with better hierarchy
+- Output:
+  - added a repository summary strip with name, source URL, and key metadata chips
+  - promoted indexed footprint into a compact four-metric row for files, chunks, entities, and relations
+  - reorganized the overview body into a two-column workspace layout
+  - kept `Latest Ingestion` as the primary operational card in the main column
+  - moved repository metadata, AI configuration, and graph snapshot into cleaner supporting cards
+  - retained existing ingestion-history and audit-log modal actions without changing backend behavior
+- Validation:
+  - ERB parse check passed for `app/views/repositories/_show_content.html.erb`
+- Notes:
+  - this pass remains UI-only and intentionally does not restore the old inline dependency lookup
+  - deeper analytics treatment for impact/graph surfaces remains part of later screen-specific passes
+
+### Step 39 — AI settings workspace alignment
+
+- Status: `completed`
+- Goal:
+  - align centralized settings to the new two-column operational workspace style
+  - separate editable configuration from runtime/status support context
+- Output:
+  - reorganized the settings page into a stronger main configuration column and supporting status rail
+  - grouped runtime status, embedding baseline, and default profile summaries into dedicated support cards
+  - retained existing model-picker behavior and all existing form fields
+- Validation:
+  - ERB parse check passed for `app/views/settings/_content.html.erb`
+
+### Step 40 — Search workspace alignment
+
+- Status: `completed`
+- Goal:
+  - shift semantic search toward a compact code-search workspace
+  - replace the looser stacked results layout with a cleaner toolbar + table pattern
+- Output:
+  - added a top search toolbar card with query input and action
+  - tightened the search workspace into primary search guidance plus scope support rail
+  - converted result rendering into a structured table with chunk lines, file path, type, and preview
+- Validation:
+  - ERB parse check passed for `app/views/repositories/search.html.erb`
+
+### Step 41 — Assistant and impact workspace refinement
+
+- Status: `completed`
+- Goal:
+  - reduce box-heaviness and better align the assistant and impact analyzer with the new shared workspace shell
+- Output:
+  - refined assistant side panels and chat shell spacing under the new light indigo system
+  - promoted impact analyzer summary into metric cards and added visual section chips for result groupings
+  - preserved all Turbo, modal, and repository-scoped logic
+- Validation:
+  - ERB parse checks passed for `app/views/repositories/assistant.html.erb`
+  - ERB parse checks passed for `app/views/repositories/impact.html.erb`
+
+### Step 42 — Admin and form surface cleanup
+
+- Status: `completed`
+- Goal:
+  - bring the remaining repository forms and deletion-log view into the same shared UI system
+- Output:
+  - refreshed repository new/edit forms with grouped source and branch-tracking cards
+  - tightened repository deletion logs into a more explicit operational history card
+  - retained all existing repository create/edit/delete behavior
+- Validation:
+  - ERB parse checks passed for `app/views/repository_deletion_logs/index.html.erb`
+  - ERB parse checks passed for `app/views/repositories/_form.html.erb`
+  - ERB parse checks passed for `app/views/repositories/new.html.erb`
+  - ERB parse checks passed for `app/views/repositories/edit.html.erb`
+
+### Step 43 — UI refresh batch completion
+
+- Status: `completed`
+- Goal:
+  - complete the remaining screens under the current UI refresh plan without changing backend behavior
+- Output:
+  - finished the outstanding screen passes for settings, search, assistant, impact analyzer, repository forms, and deletion logs
+  - consolidated the shared stylesheet further so all major product surfaces now follow the same shell, spacing, card, and table language
+- Validation:
+  - helper syntax check passed for `app/helpers/application_helper.rb`
+  - ERB parse checks passed for all updated view files in this batch
+- Notes:
+  - this completes the current UI-only redesign pass against the active reference direction
+  - any further work would now be a polish round rather than an unfinished core refresh step

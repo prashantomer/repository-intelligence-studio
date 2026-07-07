@@ -2,62 +2,92 @@
 
 <div class="page repositories-page">
   <% if @repositories.any? %>
+    <% total_repositories = @repositories.size %>
+    <% completed_repositories = @repositories.count(&:completed?) %>
+    <% failed_repositories = @repositories.count(&:failed?) %>
+    <% pending_repositories = @repositories.count(&:pending?) %>
+    <% skipped_repositories = @repositories.count(&:skipped?) %>
+
+    <section class="metrics-grid repository-index-metrics-grid">
+      <article class="card metric repository-index-metric-card">
+        <span class="metric-label">Total</span>
+        <span class="metric-value"><%= total_repositories %></span>
+      </article>
+      <article class="card metric repository-index-metric-card">
+        <span class="metric-label">Completed</span>
+        <span class="metric-value"><%= completed_repositories %></span>
+      </article>
+      <article class="card metric repository-index-metric-card">
+        <span class="metric-label">Failed</span>
+        <span class="metric-value"><%= failed_repositories %></span>
+      </article>
+      <article class="card metric repository-index-metric-card">
+        <span class="metric-label">Pending</span>
+        <span class="metric-value"><%= pending_repositories %></span>
+      </article>
+      <article class="card metric repository-index-metric-card">
+        <span class="metric-label">Skipped</span>
+        <span class="metric-value"><%= skipped_repositories %></span>
+      </article>
+    </section>
+
     <section class="card repository-index-shell">
       <div class="repository-index-toolbar">
-        <strong class="repository-index-toolbar-title">Repository inventory</strong>
+        <div>
+          <strong class="repository-index-toolbar-title">Repository inventory</strong>
+          <p class="page-copy repository-index-toolbar-copy">Manage tracked repositories and monitor sync state.</p>
+        </div>
         <div class="repository-index-toolbar-meta">
           <span class="status-pill">Public repositories</span>
           <span class="status-pill">Single workspace view</span>
         </div>
       </div>
 
-      <div class="repository-list">
-        <div class="repository-list-header">
-          <span>Repository</span>
-          <span>Source</span>
-          <span>Assistant</span>
-          <span>Embeddings</span>
-          <span>Footprint</span>
-          <span>Sync</span>
-        </div>
-
-      <% @repositories.each do |repository| %>
-        <%= link_to repository_path(repository), class: "repository-row" do %>
-          <article class="repository-row-main">
-            <div class="repository-row-title repository-row-grid">
-              <div>
-                <h2><%= repository.name %></h2>
-                <p class="card-url repository-row-url"><%= repository.github_url %></p>
-              </div>
-              <div class="repository-row-cell">
-                <strong><%= repository.tracked_branch %></strong>
-                <span class="repository-row-copy"><%= repository.provider %> · <%= repository.visibility.humanize %></span>
-              </div>
-
-              <div class="repository-row-cell">
-                <strong><%= repository.assistant_provider %></strong>
-                <span class="repository-row-copy"><%= repository.assistant_model %></span>
-              </div>
-
-              <div class="repository-row-cell">
-                <strong><%= repository.embedding_provider %></strong>
-                <span class="repository-row-copy"><%= repository.embedding_model %></span>
-              </div>
-
-              <div class="repository-row-cell">
-                <strong><%= pluralize(repository.code_files.count, "file") %></strong>
-                <span class="repository-row-copy"><%= repository.code_chunks.count %> chunks · <%= repository.entities.count %> entities</span>
-              </div>
-
-              <div class="repository-row-cell repository-row-sync">
-                <span class="status-pill status-<%= repository.status %>"><%= repository.status.humanize %></span>
-                <strong><%= repository.last_ingested_at ? repository.last_ingested_at.strftime("%Y-%m-%d %H:%M") : "Not yet" %></strong>
-                <span class="repository-row-copy"><%= repository.entity_relationships.count %> relations</span>
-              </div>
-            </div>
-          </article>
-        <% end %>
-      <% end %>
+      <div class="table-scroll repository-index-table-shell">
+        <table class="data-table repository-index-table">
+          <thead>
+            <tr>
+              <th>Repository</th>
+              <th>Branch</th>
+              <th>Source</th>
+              <th>Files</th>
+              <th>Chunks</th>
+              <th>Entities</th>
+              <th>Relations</th>
+              <th>Sync Status</th>
+              <th>Last Synced</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @repositories.each do |repository| %>
+              <tr class="repository-index-table-row" data-href="<%= repository_path(repository) %>">
+                <td>
+                  <%= link_to repository_path(repository), class: "repository-index-primary-link" do %>
+                    <strong><%= repository.name %></strong>
+                  <% end %>
+                  <div class="repository-row-copy"><%= repository.github_url %></div>
+                </td>
+                <td>
+                  <strong><%= repository.tracked_branch %></strong>
+                  <div class="repository-row-copy">Default: <%= repository.default_branch %></div>
+                </td>
+                <td>
+                  <strong><%= repository.provider %></strong>
+                  <div class="repository-row-copy"><%= repository.visibility.humanize %></div>
+                </td>
+                <td><%= repository.code_files.count %></td>
+                <td><%= repository.code_chunks.count %></td>
+                <td><%= repository.entities.count %></td>
+                <td><%= repository.entity_relationships.count %></td>
+                <td><span class="status-pill status-<%= repository.status %>"><%= repository.status.humanize %></span></td>
+                <td>
+                  <strong><%= repository.last_ingested_at ? repository.last_ingested_at.strftime("%Y-%m-%d %H:%M") : "Not yet" %></strong>
+                  <div class="repository-row-copy"><%= repository.assistant_provider %> · <%= repository.embedding_provider %></div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
       </div>
     </section>
   <% else %>

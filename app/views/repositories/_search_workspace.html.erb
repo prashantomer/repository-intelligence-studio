@@ -1,0 +1,102 @@
+<turbo-frame id="search-workspace">
+  <div class="search-workspace-grid">
+    <div class="overview-main">
+      <section class="card search-toolbar-card">
+        <div class="search-toolbar-layout">
+          <%= form_with url: search_repository_path(@repository), method: :get, class: "search-toolbar-form", data: { turbo_stream: true } do |form| %>
+            <div class="field">
+              <%= form.label :q, "Search query" %>
+              <div class="search-toolbar-input-row">
+                <%= form.text_field :q, value: @query, placeholder: "How is task execution handled?" %>
+                <div class="button-row search-toolbar-actions">
+                  <%= form.submit "Search", class: "button button-primary" %>
+                </div>
+              </div>
+              <span class="field-hint">Changing embedding provider or model requires a re-sync before results are consistent.</span>
+            </div>
+          <% end %>
+
+          <div class="search-scope-inline">
+            <article class="search-scope-inline-item">
+              <span class="search-scope-inline-title">Repository-scoped</span>
+              <span class="search-scope-inline-copy">No cross-repository mixing.</span>
+            </article>
+            <article class="search-scope-inline-item">
+              <span class="search-scope-inline-title">Chunk-based</span>
+              <span class="search-scope-inline-copy">Matches come from stored code and document chunks.</span>
+            </article>
+            <article class="search-scope-inline-item">
+              <span class="search-scope-inline-title">Embedding-ranked</span>
+              <span class="search-scope-inline-copy">Ranking uses the active centralized embedding provider.</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <% if @query.present? %>
+        <section class="card search-results-card">
+          <div class="section-title">
+            <div>
+              <h2>Results</h2>
+              <p class="page-copy">Top matches for <strong><%= @query %></strong>.</p>
+            </div>
+          </div>
+
+          <% if @search_hits.any? %>
+            <div class="table-scroll audit-log-table-shell search-results-table-shell">
+              <table class="data-table search-results-table">
+                <thead>
+                  <tr>
+                    <th>Match</th>
+                    <th>File</th>
+                    <th>Type</th>
+                    <th>Preview</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% @search_hits.each do |hit| %>
+                    <tr>
+                      <td><strong><%= "Line #{hit[:match_line_number]}" %></strong></td>
+                      <td><%= hit[:chunk].code_file.path %></td>
+                      <td><span class="status-pill"><%= hit[:chunk].chunk_type %></span></td>
+                      <td><%= search_result_snippet(hit, @query, context_lines: 3) %></td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% else %>
+            <section class="empty-state">
+              <h2>No matching chunks found</h2>
+              <p>Try a more specific class, module, service, or workflow question.</p>
+            </section>
+          <% end %>
+        </section>
+      <% else %>
+        <section class="card search-results-card search-primary-guide-card">
+          <div class="section-title">
+            <div>
+              <h2>Search Chunks</h2>
+              <p class="page-copy">Use classes, modules, services, features, or workflows.</p>
+            </div>
+          </div>
+
+          <div class="timeline-list compact-timeline">
+            <article class="timeline-item">
+              <span class="timeline-title">Repository-scoped only</span>
+              <span class="timeline-meta">No cross-repository mixing in retrieval.</span>
+            </article>
+            <article class="timeline-item">
+              <span class="timeline-title">Chunk-based retrieval</span>
+              <span class="timeline-meta">Matches are returned from stored code/document chunks.</span>
+            </article>
+            <article class="timeline-item">
+              <span class="timeline-title">Embedding-backed ranking</span>
+              <span class="timeline-meta">Similarity depends on the current user's centralized embedding provider.</span>
+            </article>
+          </div>
+        </section>
+      <% end %>
+    </div>
+  </div>
+</turbo-frame>

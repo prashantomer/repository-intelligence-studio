@@ -2,8 +2,15 @@
 
 <div class="page">
   <% if @repository_deletion_logs.any? %>
-    <section class="card">
-      <div class="table-scroll audit-log-table-shell">
+    <section class="card repository-deletion-log-card">
+      <div class="section-title">
+        <div>
+          <h2>Deletion History</h2>
+          <p class="page-copy">Permanent repository removals and cleanup outcomes.</p>
+        </div>
+      </div>
+
+      <div class="table-scroll audit-log-table-shell repository-deletion-log-table-shell">
         <table class="data-table audit-log-table">
           <thead>
             <tr>

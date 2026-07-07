@@ -16,33 +16,52 @@ module ApplicationHelper
   end
 
   def app_topbar_eyebrow
-    return "Repository Assistant" if defined?(@repository) && @repository.present? && current_page?(assistant_repository_path(@repository))
-    return "Semantic Search" if defined?(@repository) && @repository.present? && current_page?(search_repository_path(@repository))
-    return "Impact Analyzer" if defined?(@repository) && @repository.present? && current_page?(impact_repository_path(@repository))
-    return "Repository Settings" if defined?(@repository) && @repository.present? && current_page?(edit_repository_path(@repository))
-    return "Repository Workspace" if defined?(@repository) && @repository.present?
+    return "Repository Assistant" if repository_route_context? && current_page?(assistant_repository_path(@repository))
+    return "Semantic Search" if repository_route_context? && current_page?(search_repository_path(@repository))
+    return "Impact Analyzer" if repository_route_context? && current_page?(impact_repository_path(@repository))
+    return "Repository Settings" if repository_route_context? && current_page?(edit_repository_path(@repository))
+    return "Repository Workspace" if repository_route_context?
     "Workspace"
   end
 
+  def app_topbar_subtitle
+    return "Manage tracked repositories and monitor sync state." if current_page?(repositories_path)
+    return "Centralized provider and model configuration." if current_page?(edit_settings_path)
+    return "Inspect provider runtime, usage, and failure history." if current_page?(provider_call_logs_path)
+    return "Review hard-delete snapshots for removed repositories." if current_page?(repository_deletion_logs_path)
+    return "Register a new repository workspace for ingestion and analysis." if current_page?(new_repository_path)
+
+    if repository_route_context? && current_page?(edit_repository_path(@repository))
+      return "Adjust tracked branch, source metadata, and runtime alignment."
+    end
+
+    return "Grounded repository-scoped Q&A with retrieval-backed context." if repository_route_context? && current_page?(assistant_repository_path(@repository))
+    return "Dependency-aware change analysis and saved impact reports." if repository_route_context? && current_page?(impact_repository_path(@repository))
+    return "Search stored repository chunks using the active embedding profile." if repository_route_context? && current_page?(search_repository_path(@repository))
+    return "Review repository status, ingestion snapshots, and indexed footprint." if repository_route_context?
+
+    "Repository operations workspace."
+  end
+
   def app_topbar_meta_items
-    if defined?(@repository) && @repository.present? && current_page?(impact_repository_path(@repository))
+    if repository_route_context? && current_page?(impact_repository_path(@repository))
       [
         "Saved reports: #{@recent_impact_reports&.size || 0}",
         "Selected: #{@selected_impact_report&.entity_name || @impact_analysis_result&.dig(:entity)&.name || "None"}"
       ]
-    elsif defined?(@repository) && @repository.present? && current_page?(assistant_repository_path(@repository))
+    elsif repository_route_context? && current_page?(assistant_repository_path(@repository))
       [
         @repository.assistant_provider,
         @repository.assistant_model,
         @conversation&.title || "New conversation"
       ]
-    elsif defined?(@repository) && @repository.present? && current_page?(search_repository_path(@repository))
+    elsif repository_route_context? && current_page?(search_repository_path(@repository))
       [
         @repository.embedding_provider,
         @repository.embedding_model,
-        "Results: #{@results&.size || 0}"
+        @query.present? ? "Results: #{@search_hits&.size || @results&.size || 0}" : "Ready"
       ]
-    elsif defined?(@repository) && @repository.present?
+    elsif repository_route_context?
       [
         @repository.tracked_branch,
         @repository.status.to_s.humanize,
@@ -62,7 +81,7 @@ module ApplicationHelper
 
     if current_page?(repositories_path)
       actions << link_to("Add Repository", new_repository_path, class: "button button-primary")
-    elsif defined?(@repository) && @repository.present? && current_page?(repository_path(@repository))
+    elsif repository_route_context? && current_page?(repository_path(@repository))
       actions << button_tag("Ingestion History", type: :button, class: "button button-secondary", data: { modal_open: "repository-ingestion-history-modal" })
       actions << button_tag("Audit Log", type: :button, class: "button button-secondary", data: { modal_open: "repository-audit-log-modal" })
       actions << link_to("Edit Repo Config", edit_repository_path(@repository), class: "button button-secondary")
@@ -76,7 +95,7 @@ module ApplicationHelper
                                turbo_confirm: "Delete this repository permanently? This removes ingestions, files, chunks, entities, chats, reports, provider logs, audit history, and temp workspaces."
                              }
                            })
-    elsif defined?(@repository) && @repository.present? && current_page?(impact_repository_path(@repository))
+    elsif repository_route_context? && current_page?(impact_repository_path(@repository))
       actions << button_tag("Help", type: :button, class: "button button-secondary", data: { modal_open: "impact-help-modal" })
       actions << button_tag("History", type: :button, class: "button button-secondary", data: { modal_open: "impact-history-modal" })
     end
@@ -245,7 +264,58 @@ module ApplicationHelper
     ]
   end
 
+  def search_result_snippet(result, query, context_lines: 3)
+    chunk = result.is_a?(Hash) ? result[:chunk] : result
+    lines = chunk.chunk_text.to_s.lines.map(&:chomp)
+    return content_tag(:code, chunk.chunk_text.to_s) if lines.empty?
+
+    focus_index = result.is_a?(Hash) ? result[:match_line_index].to_i : snippet_focus_line_index(lines, query)
+    first_index = [ focus_index - context_lines, 0 ].max
+    last_index = [ focus_index + context_lines, lines.length - 1 ].min
+    base_line_number = chunk.start_line.to_i.positive? ? chunk.start_line.to_i : 1
+
+    snippet_rows = lines[first_index..last_index].each_with_index.map do |line, relative_index|
+      absolute_index = first_index + relative_index
+      line_number = base_line_number + absolute_index
+
+      content_tag(:div, class: "search-snippet-line#{' is-match' if absolute_index == focus_index}") do
+        safe_join([
+          content_tag(:span, line_number, class: "search-snippet-line-number"),
+          content_tag(:code, highlight_snippet_terms(line, query), class: "search-snippet-line-code")
+        ])
+      end
+    end
+
+    content_tag(:div, safe_join(snippet_rows), class: "search-snippet")
+  end
+
   private
+
+  def repository_route_context?
+    defined?(@repository) && @repository.present? && @repository.persisted?
+  end
+
+  def snippet_focus_line_index(lines, query)
+    query_tokens = query.to_s.downcase.scan(/[a-z0-9_:-]+/).uniq
+    return 0 if query_tokens.empty?
+
+    scored_indexes = lines.each_with_index.map do |line, index|
+      normalized_line = line.downcase
+      score = query_tokens.sum { |token| normalized_line.include?(token) ? token.length : 0 }
+      [ score, index ]
+    end
+
+    scored_indexes.max_by { |score, index| [ score, -index ] }&.last || 0
+  end
+
+  def highlight_snippet_terms(line, query)
+    escaped_line = ERB::Util.html_escape(line.to_s)
+    query_tokens = query.to_s.scan(/[a-zA-Z0-9_:-]+/).uniq.sort_by { |token| -token.length }
+    return escaped_line.html_safe if query_tokens.empty?
+
+    pattern = Regexp.union(query_tokens.map { |token| Regexp.new(Regexp.escape(token), Regexp::IGNORECASE) })
+    escaped_line.gsub(pattern) { |match| %(<mark>#{match}</mark>) }.html_safe
+  end
 
   def inline_format(text)
     escaped = ERB::Util.html_escape(text.to_s)

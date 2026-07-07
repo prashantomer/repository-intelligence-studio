@@ -208,6 +208,32 @@ const bindImpactForm = () => {
   })
 }
 
+const bindTabs = () => {
+  document.querySelectorAll("[data-tab-group]").forEach((group) => {
+    if (group.dataset.tabsBound === "true") return
+    group.dataset.tabsBound = "true"
+
+    const buttons = Array.from(group.querySelectorAll("[data-tab-target]"))
+    const panelIds = buttons.map((button) => button.dataset.tabTarget)
+    const scope = group.parentElement || document
+    const panels = Array.from(scope.querySelectorAll("[data-tab-panel]")).filter((panel) => panelIds.includes(panel.dataset.tabPanel))
+
+    const showPanel = (panelId) => {
+      buttons.forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.tabTarget === panelId)
+      })
+
+      panels.forEach((panel) => {
+        panel.classList.toggle("is-hidden", panel.dataset.tabPanel !== panelId)
+      })
+    }
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => showPanel(button.dataset.tabTarget))
+    })
+  })
+}
+
 const bindModals = () => {
   document.querySelectorAll("[data-modal-open]").forEach((trigger) => {
     if (trigger.dataset.modalBound === "true") return
@@ -269,6 +295,7 @@ const bindAppUi = () => {
   bindAssistantComposer()
   bindImpactForm()
   bindModelPicker()
+  bindTabs()
   bindModals()
 }
 

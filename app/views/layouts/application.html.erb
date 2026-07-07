@@ -28,8 +28,15 @@
     <div class="app-frame">
       <aside class="app-sidebar">
         <div class="sidebar-brand">
-          <span class="brand-mark">Repository Intelligence Studio</span>
-          <strong class="sidebar-brand-title">Workspace</strong>
+          <div class="sidebar-brand-lockup">
+            <div class="sidebar-brand-mark" aria-hidden="true">
+              <span class="sidebar-brand-mark-core"></span>
+            </div>
+            <div class="sidebar-brand-copy-block">
+              <span class="brand-mark">Repository Intelligence Studio</span>
+              <strong class="sidebar-brand-title">Workspace</strong>
+            </div>
+          </div>
           <span class="brand-copy">Operational repository intelligence and grounded answers.</span>
         </div>
 
@@ -38,18 +45,22 @@
             <span class="sidebar-nav-label">Workspace</span>
             <%= link_to repositories_path, class: "sidebar-link #{'is-active' if current_page?(repositories_path)}" do %>
               <span class="sidebar-link-title">Repositories</span>
+              <span class="sidebar-link-copy">Tracked repos and sync state</span>
             <% end %>
 
             <%= link_to edit_settings_path, class: "sidebar-link #{'is-active' if current_page?(edit_settings_path)}" do %>
               <span class="sidebar-link-title">AI Settings</span>
+              <span class="sidebar-link-copy">Provider and model defaults</span>
             <% end %>
 
             <%= link_to provider_call_logs_path, class: "sidebar-link #{'is-active' if current_page?(provider_call_logs_path)}" do %>
               <span class="sidebar-link-title">Provider Logs</span>
+              <span class="sidebar-link-copy">Assistant and embedding calls</span>
             <% end %>
 
             <%= link_to repository_deletion_logs_path, class: "sidebar-link #{'is-active' if current_page?(repository_deletion_logs_path)}" do %>
               <span class="sidebar-link-title">Deletion Logs</span>
+              <span class="sidebar-link-copy">Repository removal history</span>
             <% end %>
           </div>
 
@@ -57,24 +68,31 @@
             <div class="sidebar-nav-group">
               <span class="sidebar-nav-label">Current Repository</span>
               <div class="sidebar-context-card">
-                <strong><%= @repository.name %></strong>
-                <span class="sidebar-user-copy"><%= @repository.tracked_branch %> branch</span>
+                <div class="sidebar-context-card-header">
+                  <strong><%= @repository.name %></strong>
+                  <span class="status-pill status-<%= @repository.status %>"><%= @repository.status.humanize %></span>
+                </div>
+                <span class="sidebar-user-copy"><%= @repository.tracked_branch %> branch · <%= @repository.provider %></span>
               </div>
 
               <%= link_to repository_path(@repository), class: "sidebar-link #{'is-active' if current_page?(repository_path(@repository))}" do %>
                 <span class="sidebar-link-title">Overview</span>
+                <span class="sidebar-link-copy">Snapshot and ingestion state</span>
               <% end %>
 
               <%= link_to assistant_repository_path(@repository), class: "sidebar-link #{'is-active' if current_page?(assistant_repository_path(@repository))}" do %>
                 <span class="sidebar-link-title">Assistant</span>
+                <span class="sidebar-link-copy">Grounded repository Q&A</span>
               <% end %>
 
               <%= link_to impact_repository_path(@repository), class: "sidebar-link #{'is-active' if current_page?(impact_repository_path(@repository))}" do %>
                 <span class="sidebar-link-title">Impact Analyzer</span>
+                <span class="sidebar-link-copy">Blast radius and dependencies</span>
               <% end %>
 
               <%= link_to search_repository_path(@repository), class: "sidebar-link #{'is-active' if current_page?(search_repository_path(@repository))}" do %>
                 <span class="sidebar-link-title">Search Chunks</span>
+                <span class="sidebar-link-copy">Chunk retrieval and lookup</span>
               <% end %>
             </div>
           <% end %>

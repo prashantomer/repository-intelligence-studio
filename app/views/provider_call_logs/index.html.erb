@@ -1,7 +1,20 @@
 <% content_for :title, "Provider Call Logs" %>
 
 <div class="page provider-logs-page">
-  <section class="card provider-log-filter-card">
+  <% total_logs = @provider_call_logs.size %>
+  <% success_logs = @provider_call_logs.count(&:success?) %>
+  <% error_logs = @provider_call_logs.count(&:failed?) %>
+  <% assistant_logs = @provider_call_logs.count(&:assistant?) %>
+  <% embedding_logs = @provider_call_logs.count(&:embedding?) %>
+
+  <section class="card provider-log-filter-card provider-log-toolbar-card">
+    <div class="section-title">
+      <div>
+        <h2>Filters</h2>
+        <p class="page-copy">Slice provider activity by repository, provider, operation, and runtime status.</p>
+      </div>
+    </div>
+
     <%= form_with url: provider_call_logs_path, method: :get, local: true do |form| %>
       <div class="form-grid four-up log-filter-grid">
         <div class="field">
@@ -39,7 +52,30 @@
     <% end %>
   </section>
 
-  <section class="card provider-log-history-card">
+  <section class="metrics-grid provider-log-metrics-grid">
+    <article class="card metric provider-log-metric-card">
+      <span class="metric-label">Visible Calls</span>
+      <span class="metric-value"><%= total_logs %></span>
+    </article>
+    <article class="card metric provider-log-metric-card">
+      <span class="metric-label">Successful</span>
+      <span class="metric-value"><%= success_logs %></span>
+    </article>
+    <article class="card metric provider-log-metric-card">
+      <span class="metric-label">Errors</span>
+      <span class="metric-value"><%= error_logs %></span>
+    </article>
+    <article class="card metric provider-log-metric-card">
+      <span class="metric-label">Assistant</span>
+      <span class="metric-value"><%= assistant_logs %></span>
+    </article>
+    <article class="card metric provider-log-metric-card">
+      <span class="metric-label">Embeddings</span>
+      <span class="metric-value"><%= embedding_logs %></span>
+    </article>
+  </section>
+
+  <section class="card provider-log-history-card provider-log-table-card">
     <div class="section-title">
       <div>
         <h2>Call History</h2>
@@ -48,7 +84,7 @@
     </div>
 
     <% if @provider_call_logs.any? %>
-      <div class="table-scroll audit-log-table-shell">
+      <div class="table-scroll audit-log-table-shell provider-log-table-shell">
         <table class="data-table provider-call-log-table">
           <thead>
             <tr>
