@@ -3,99 +3,68 @@
 <div class="page">
   <%= turbo_stream_from [@repository, :assistant] %>
 
-  <section class="hero-card">
-    <div class="page-header">
-      <div>
-        <p class="eyebrow">Repository Assistant</p>
-        <h1><%= @repository.name %></h1>
-        <p class="page-copy">Ask repository-scoped questions against indexed code, routes, entities, and embeddings.</p>
-        <div class="meta-inline">
-          <span>Provider: <%= @repository.assistant_provider %></span>
-          <span>Model: <%= @repository.assistant_model %></span>
-          <span>Thread: <%= @conversation&.title || "New conversation" %></span>
-        </div>
-      </div>
-
-      <div class="hero-actions">
-        <%= link_to "Back to Repository", repository_path(@repository), class: "button button-secondary" %>
-        <%= link_to "AI Settings", edit_settings_path, class: "button button-secondary" %>
-        <%= link_to "Search Chunks", search_repository_path(@repository), class: "button button-secondary" %>
-      </div>
-    </div>
-  </section>
-
   <div class="assistant-layout">
     <aside class="assistant-sidebar">
-      <section class="card card-muted assistant-panel">
+      <section class="card card-muted assistant-panel assistant-panel-compact">
         <div class="section-title">
           <div>
             <h2>Session</h2>
-            <p class="page-copy">Current grounded chat state.</p>
+            <p class="page-copy">Current thread state.</p>
           </div>
         </div>
 
-        <div class="assistant-stats" id="assistant-session-stats">
-          <article class="assistant-stat">
-            <span class="assistant-stat-label">Messages</span>
-            <span class="assistant-stat-value"><%= @messages.count %></span>
-          </article>
-          <article class="assistant-stat">
-            <span class="assistant-stat-label">Repository</span>
-            <span class="assistant-stat-value"><%= @repository.name %></span>
-          </article>
-          <article class="assistant-stat">
-            <span class="assistant-stat-label">Scope</span>
-            <span class="assistant-stat-value"><%= @repository.tracked_branch %></span>
-          </article>
-        </div>
+        <%= render "repositories/assistant/session_stats", repository: @repository, messages: @messages %>
       </section>
 
-      <section class="card card-muted assistant-panel">
+      <section class="card card-muted assistant-panel assistant-panel-compact">
         <div class="section-title">
           <div>
             <h2>Good Questions</h2>
-            <p class="page-copy">Ask for concrete structure, flow, and impact.</p>
+            <p class="page-copy">Example prompts.</p>
           </div>
         </div>
 
-        <div class="assistant-prompt-list">
-          <div class="assistant-prompt-item">How does request execution flow through this repository?</div>
-          <div class="assistant-prompt-item">Which files define the ingestion and re-sync logic?</div>
-          <div class="assistant-prompt-item">What would break if I change the embedding provider?</div>
-          <div class="assistant-prompt-item">Summarize the architecture for a new engineer.</div>
-        </div>
+        <ol class="assistant-compact-list assistant-prompt-list">
+          <% repository_question_samples(@repository).each do |prompt| %>
+            <li class="assistant-compact-item"><%= prompt %></li>
+          <% end %>
+        </ol>
       </section>
 
-      <section class="card card-muted assistant-panel">
+      <section class="card card-muted assistant-panel assistant-panel-compact">
         <div class="section-title">
           <div>
             <h2>Answer Pipeline</h2>
-            <p class="page-copy">Current assistant execution path.</p>
+            <p class="page-copy">Execution path.</p>
           </div>
         </div>
 
-        <div class="timeline-list">
-          <article class="timeline-item">
-            <span class="timeline-title">1. Retrieve</span>
-            <span class="timeline-meta">Semantic search stays inside this repository snapshot.</span>
-          </article>
-          <article class="timeline-item">
-            <span class="timeline-title">2. Ground</span>
-            <span class="timeline-meta">Relevant chunks and citations are assembled into prompt context.</span>
-          </article>
-          <article class="timeline-item">
-            <span class="timeline-title">3. Respond</span>
-            <span class="timeline-meta"><%= @repository.assistant_provider %> / <%= @repository.assistant_model %> generates the final answer.</span>
-          </article>
+        <div class="table-scroll assistant-mini-table-shell">
+          <table class="data-table assistant-mini-table">
+            <tbody>
+              <tr>
+                <th>Retrieve</th>
+                <td>Semantic search stays inside this repository snapshot.</td>
+              </tr>
+              <tr>
+                <th>Ground</th>
+                <td>Relevant chunks and citations are assembled into prompt context.</td>
+              </tr>
+              <tr>
+                <th>Respond</th>
+                <td><%= @repository.assistant_provider %> / <%= @repository.assistant_model %> generates the final answer.</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
     </aside>
 
-    <section class="card assistant-chat-shell">
+    <section class="card assistant-chat-shell assistant-chat-shell-refined">
       <div class="assistant-chat-header">
         <div>
           <h2>Conversation</h2>
-          <p class="page-copy">Repository-scoped thread with grounded assistant responses.</p>
+          <p class="page-copy">Grounded repository thread.</p>
         </div>
         <div class="assistant-chat-meta" id="assistant-thread-status">
           <span class="status-pill"><%= @messages.any? ? "Active thread" : "No messages yet" %></span>

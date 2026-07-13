@@ -1,0 +1,14 @@
+<section class="app-topbar" id="app-topbar">
+  <div class="topbar-copy">
+    <p class="topbar-eyebrow"><%= app_topbar_eyebrow %></p>
+    <h1><%= app_topbar_title %></h1>
+    <p class="topbar-subtitle"><%= app_topbar_subtitle %></p>
+    <%= render "shared/app_topbar_meta" %>
+  </div>
+
+  <% if app_topbar_actions.any? %>
+    <div class="topbar-actions">
+      <%= safe_join(app_topbar_actions) %>
+    </div>
+  <% end %>
+</section>

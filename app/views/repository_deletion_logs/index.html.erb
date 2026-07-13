@@ -1,0 +1,66 @@
+<% content_for :title, "Repository Deletion Logs" %>
+
+<div class="page">
+  <% if @repository_deletion_logs.any? %>
+    <section class="card repository-deletion-log-card">
+      <div class="section-title">
+        <div>
+          <h2>Deletion History</h2>
+          <p class="page-copy">Permanent repository removals and cleanup outcomes.</p>
+        </div>
+      </div>
+
+      <div class="table-scroll audit-log-table-shell repository-deletion-log-table-shell">
+        <table class="data-table audit-log-table">
+          <thead>
+            <tr>
+              <th>Deleted</th>
+              <th>Repository</th>
+              <th>Owner</th>
+              <th>Branch</th>
+              <th>Commit</th>
+              <th>Reason</th>
+              <th>Summary</th>
+              <th>Workspace</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @repository_deletion_logs.each do |log| %>
+              <% summary = log.summary %>
+              <tr>
+                <td><%= log.deleted_at.strftime("%Y-%m-%d %H:%M") %></td>
+                <td>
+                  <strong><%= log.name %></strong><br>
+                  <span class="repository-row-copy">#<%= log.deleted_repository_id %> · <%= log.github_url %></span>
+                </td>
+                <td><%= log.user&.name || "Unknown" %></td>
+                <td><%= log.tracked_branch.presence || "—" %></td>
+                <td><%= log.last_commit_sha.presence || "—" %></td>
+                <td><%= log.deletion_reason.humanize %></td>
+                <td>
+                  <span class="repository-row-copy">
+                    <%= summary["code_file_count"] %> files ·
+                    <%= summary["code_chunk_count"] %> chunks ·
+                    <%= summary["entity_count"] %> entities ·
+                    <%= summary["conversation_count"] %> chats ·
+                    <%= summary["impact_report_count"] %> reports
+                  </span>
+                </td>
+                <td>
+                  <span class="status-pill <%= log.workspace_cleanup_success? ? '' : 'status-failed' %>">
+                    <%= log.workspace_cleanup_success? ? "Cleaned" : "Check" %>
+                  </span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  <% else %>
+    <section class="empty-state workspace-empty">
+      <h2>No deletion logs yet</h2>
+      <p>Deleted repositories will appear here after the first permanent removal.</p>
+    </section>
+  <% end %>
+</div>

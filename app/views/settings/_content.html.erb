@@ -1,24 +1,10 @@
 <div id="settings-content" class="page">
-  <section class="hero-card">
-    <div class="page-header">
-      <div>
-        <p class="eyebrow">User Settings</p>
-        <h1>Centralized AI Settings</h1>
-        <p class="page-copy">These settings apply across all repositories owned by the current user. Update them once here instead of per repository.</p>
-      </div>
-
-      <div class="hero-actions">
-        <%= link_to "Back to Repositories", repositories_path, class: "button button-secondary" %>
-      </div>
-    </div>
-  </section>
-
   <div class="two-column-grid">
-    <section class="card">
+    <section class="card settings-main-card">
       <div class="section-title">
         <div>
           <h2>AI Configuration</h2>
-          <p class="page-copy">Assistant generation and embedding retrieval defaults for every repository.</p>
+          <p class="page-copy">Defaults for all repositories.</p>
         </div>
       </div>
 
@@ -47,12 +33,12 @@
         <% end %>
 
         <div class="settings-stack">
-          <div class="settings-section-grid">
+          <div class="settings-section-grid settings-primary-grid">
             <section class="card card-muted compact-card">
               <div class="section-title">
                 <div>
                   <h2>Profile</h2>
-                  <p class="page-copy">Owner-level defaults for all repositories under this user.</p>
+                  <p class="page-copy">Owner defaults.</p>
                 </div>
               </div>
 
@@ -69,7 +55,7 @@
               <div class="section-title">
                 <div>
                   <h2>Provider Connection</h2>
-                  <p class="page-copy">Used when a self-hosted runtime is selected.</p>
+                  <p class="page-copy">Self-hosted runtime only.</p>
                 </div>
               </div>
 
@@ -83,12 +69,12 @@
             </section>
           </div>
 
-          <div class="settings-section-grid">
+          <div class="settings-section-grid settings-primary-grid">
             <section class="card card-muted compact-card">
               <div class="section-title">
                 <div>
                   <h2>Assistant Generation</h2>
-                  <p class="page-copy">Controls answer generation after grounded retrieval.</p>
+                  <p class="page-copy">Answer generation runtime.</p>
                 </div>
               </div>
 
@@ -138,7 +124,7 @@
               <div class="section-title">
                 <div>
                   <h2>Embedding & Retrieval</h2>
-                  <p class="page-copy">Controls semantic search and chunk similarity.</p>
+                  <p class="page-copy">Semantic search runtime.</p>
                 </div>
               </div>
 
@@ -194,37 +180,75 @@
       <% end %>
     </section>
 
-    <aside class="card card-muted">
+    <aside class="settings-status-rail">
+      <section class="card card-muted compact-card">
+        <div class="section-title">
+          <div>
+            <h2>Runtime Status</h2>
+            <p class="page-copy">Provider readiness.</p>
+          </div>
+        </div>
+
+        <div class="timeline-list compact-timeline">
+          <article class="timeline-item">
+            <span class="timeline-title">Assistant runtime</span>
+            <span class="timeline-meta">
+              <%= user.assistant_provider.humanize %> ·
+              <%= user.assistant_provider_ready? ? "ready to use" : "missing runtime requirement" %>
+            </span>
+          </article>
+          <article class="timeline-item">
+            <span class="timeline-title">Embedding runtime</span>
+            <span class="timeline-meta" data-model-picker-target="sidebarEmbeddingStatus">
+              <%= user.embedding_provider.humanize %> · <%= user.embedding_provider_ready? ? "ready to use" : "missing runtime requirement or unsupported" %>
+            </span>
+          </article>
+        </div>
+      </section>
+
+      <section class="card card-muted compact-card">
+        <div class="section-title">
+          <div>
+            <h2>Embedding Baseline</h2>
+            <p class="page-copy">Current storage assumptions.</p>
+          </div>
+        </div>
+
+        <div class="timeline-list compact-timeline">
+          <article class="timeline-item">
+            <span class="timeline-title">Storage</span>
+            <span class="timeline-meta" data-model-picker-target="anthropicNotice">Current storage is fixed at 1024 dimensions. Use `local` or `Ollama` embeddings now; provider-portable vector routing is planned later.</span>
+          </article>
+          <article class="timeline-item">
+            <span class="timeline-title">Re-index requirement</span>
+            <span class="timeline-meta">If embedding provider or model changes, re-sync repositories to rebuild stored vectors.</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="card card-muted compact-card">
       <div class="section-title">
         <div>
-          <h2>Provider Status</h2>
-          <p class="page-copy">Current runtime readiness and support boundaries.</p>
+          <h2>Default Profile</h2>
+          <p class="page-copy">Centralized user-level selection.</p>
         </div>
       </div>
 
-      <div class="timeline-list">
+      <div class="timeline-list compact-timeline">
         <article class="timeline-item">
-          <span class="timeline-title">Assistant runtime</span>
-          <span class="timeline-meta">
-            <%= user.assistant_provider.humanize %> ·
-            <%= user.assistant_provider_ready? ? "ready to use" : "missing runtime requirement" %>
-          </span>
+          <span class="timeline-title">Assistant</span>
+          <span class="timeline-meta"><%= user.assistant_provider %> · <%= user.assistant_model %></span>
         </article>
         <article class="timeline-item">
-          <span class="timeline-title">Embedding runtime</span>
-          <span class="timeline-meta" data-model-picker-target="sidebarEmbeddingStatus">
-            <%= user.embedding_provider.humanize %> · <%= user.embedding_provider_ready? ? "ready to use" : "missing runtime requirement or unsupported" %>
-          </span>
+          <span class="timeline-title">Embeddings</span>
+          <span class="timeline-meta"><%= user.embedding_provider %> · <%= user.embedding_model %></span>
         </article>
         <article class="timeline-item">
-          <span class="timeline-title">Embedding baseline</span>
-          <span class="timeline-meta" data-model-picker-target="anthropicNotice">Current storage is fixed at 1024 dimensions. Use `local` or `Ollama` embeddings now; provider-portable vector routing is planned later.</span>
-        </article>
-        <article class="timeline-item">
-          <span class="timeline-title">Re-index requirement</span>
-          <span class="timeline-meta">If embedding provider or model changes, re-sync repositories to rebuild stored vectors.</span>
+          <span class="timeline-title">Ollama endpoint</span>
+          <span class="timeline-meta"><%= user.ollama_base_url %></span>
         </article>
       </div>
+      </section>
     </aside>
   </div>
 </div>

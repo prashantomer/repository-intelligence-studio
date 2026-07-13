@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_26_113000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_30_153000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "vector"
@@ -29,8 +29,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_26_113000) do
     t.index ["repository_id"], name: "index_audit_logs_on_repository_id"
   end
 
-# Could not dump table "code_chunks" because of following StandardError
-#   Unknown type 'vector(1024)' for column 'embedding'
+  create_table "code_chunks", force: :cascade do |t|
+    t.bigint "code_file_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "entity_id"
+    t.integer "end_line", null: false
+    t.text "chunk_text", null: false
+    t.string "chunk_type", null: false
+    t.bigint "repository_id", null: false
+    t.integer "start_line", null: false
+    t.integer "token_count", default: 0, null: false
+    t.text "embedding"
+    t.index ["code_file_id", "start_line", "end_line"], name: "idx_code_chunks_file_lines"
+    t.index ["code_file_id"], name: "index_code_chunks_on_code_file_id"
+    t.index ["entity_id"], name: "index_code_chunks_on_entity_id"
+    t.index ["repository_id", "chunk_type"], name: "index_code_chunks_on_repository_id_and_chunk_type"
+    t.index ["repository_id"], name: "index_code_chunks_on_repository_id"
+  end
 
 
   create_table "code_files", force: :cascade do |t|
@@ -55,6 +71,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_26_113000) do
     t.index ["repository_id", "created_at"], name: "index_conversations_on_repository_id_and_created_at"
     t.index ["repository_id"], name: "index_conversations_on_repository_id"
     t.index ["user_id"], name: "index_conversations_on_user_id"
+  end
+
+  create_table "dependency_edges", force: :cascade do |t|
+    t.decimal "confidence", precision: 4, scale: 2, default: "0.5", null: false
+    t.datetime "created_at", null: false
+    t.string "edge_type", null: false
+    t.bigint "repository_id", null: false
+    t.bigint "source_id", null: false
+    t.string "source_type", null: false
+    t.bigint "target_id", null: false
+    t.string "target_type", null: false
+    t.datetime "updated_at", null: false
+    t.index ["repository_id", "edge_type"], name: "index_dependency_edges_on_repository_and_edge_type"
+    t.index ["repository_id", "source_type", "source_id", "target_type", "target_id", "edge_type"], name: "index_dependency_edges_on_repository_source_target_and_type", unique: true
+    t.index ["repository_id", "source_type", "source_id"], name: "index_dependency_edges_on_repository_and_source"
+    t.index ["repository_id", "target_type", "target_id"], name: "index_dependency_edges_on_repository_and_target"
+    t.index ["repository_id"], name: "index_dependency_edges_on_repository_id"
   end
 
   create_table "entities", force: :cascade do |t|
@@ -87,6 +120,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_26_113000) do
     t.index ["target_entity_id"], name: "index_entity_relationships_on_target_entity_id"
   end
 
+  create_table "impact_reports", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "generated_at", null: false
+    t.string "query", null: false
+    t.bigint "repository_id", null: false
+    t.jsonb "result_json", default: {}, null: false
+    t.datetime "updated_at", null: false
+    t.index ["query"], name: "index_impact_reports_on_query"
+    t.index ["repository_id", "generated_at"], name: "index_impact_reports_on_repository_id_and_generated_at"
+    t.index ["repository_id"], name: "index_impact_reports_on_repository_id"
+  end
+
   create_table "messages", force: :cascade do |t|
     t.jsonb "cites_json", default: [], null: false
     t.integer "completion_tokens", default: 0, null: false
@@ -101,6 +146,32 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_26_113000) do
     t.index ["conversation_id"], name: "index_messages_on_conversation_id"
     t.index ["response_state"], name: "index_messages_on_response_state"
     t.index ["role"], name: "index_messages_on_role"
+  end
+
+  create_table "provider_call_logs", force: :cascade do |t|
+    t.integer "completion_tokens", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.string "endpoint"
+    t.text "error_message"
+    t.decimal "estimated_cost_usd", precision: 12, scale: 6
+    t.integer "latency_ms", default: 0, null: false
+    t.string "model", null: false
+    t.string "operation_type", null: false
+    t.integer "prompt_tokens", default: 0, null: false
+    t.string "provider", null: false
+    t.bigint "repository_id", null: false
+    t.jsonb "request_metadata", default: {}, null: false
+    t.jsonb "response_metadata", default: {}, null: false
+    t.string "status", null: false
+    t.integer "total_tokens", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["created_at"], name: "index_provider_call_logs_on_created_at"
+    t.index ["provider", "operation_type", "status"], name: "index_provider_call_logs_on_provider_operation_status"
+    t.index ["repository_id", "created_at"], name: "index_provider_call_logs_on_repository_id_and_created_at"
+    t.index ["repository_id"], name: "index_provider_call_logs_on_repository_id"
+    t.index ["user_id", "created_at"], name: "index_provider_call_logs_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_provider_call_logs_on_user_id"
   end
 
   create_table "repositories", force: :cascade do |t|
@@ -127,6 +198,33 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_26_113000) do
     t.index ["provider"], name: "index_repositories_on_provider"
     t.index ["status"], name: "index_repositories_on_status"
     t.index ["user_id"], name: "index_repositories_on_user_id"
+  end
+
+  create_table "repository_deletion_logs", force: :cascade do |t|
+    t.string "assistant_model"
+    t.string "assistant_provider"
+    t.datetime "created_at", null: false
+    t.string "default_branch"
+    t.datetime "deleted_at", null: false
+    t.bigint "deleted_repository_id", null: false
+    t.string "deletion_reason", default: "user_requested", null: false
+    t.string "embedding_model"
+    t.string "embedding_provider"
+    t.string "github_url", null: false
+    t.string "last_commit_sha"
+    t.datetime "last_ingested_at"
+    t.string "name", null: false
+    t.string "provider"
+    t.string "status"
+    t.jsonb "summary_json", default: {}, null: false
+    t.string "tracked_branch"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.string "visibility"
+    t.index ["deleted_at"], name: "index_repository_deletion_logs_on_deleted_at"
+    t.index ["deleted_repository_id"], name: "index_repository_deletion_logs_on_deleted_repository_id", unique: true
+    t.index ["github_url"], name: "index_repository_deletion_logs_on_github_url"
+    t.index ["user_id"], name: "index_repository_deletion_logs_on_user_id"
   end
 
   create_table "repository_ingestions", force: :cascade do |t|
@@ -179,13 +277,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_26_113000) do
   add_foreign_key "code_chunks", "repositories"
   add_foreign_key "code_files", "repositories"
   add_foreign_key "conversations", "repositories"
+  add_foreign_key "dependency_edges", "repositories"
   add_foreign_key "entities", "code_files"
   add_foreign_key "entities", "repositories"
   add_foreign_key "entity_relationships", "entities", column: "source_entity_id"
   add_foreign_key "entity_relationships", "entities", column: "target_entity_id"
   add_foreign_key "entity_relationships", "repositories"
+  add_foreign_key "impact_reports", "repositories"
   add_foreign_key "messages", "conversations"
+  add_foreign_key "provider_call_logs", "repositories"
+  add_foreign_key "provider_call_logs", "users"
   add_foreign_key "repositories", "users"
+  add_foreign_key "repository_deletion_logs", "users"
   add_foreign_key "repository_ingestions", "repositories"
   add_foreign_key "repository_routes", "repositories"
 end

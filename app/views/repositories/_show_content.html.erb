@@ -1,224 +1,297 @@
 <div id="repository-show-content" class="page">
-  <section class="hero-card">
-    <div class="page-header">
-      <div>
-        <p class="eyebrow">Repository</p>
-        <h1><%= repository.name %></h1>
-        <p class="page-copy"><%= repository.github_url %></p>
-        <div class="meta-inline">
-          <span>Status: <%= repository.status.humanize %></span>
-          <span>Tracked branch: <%= repository.tracked_branch %></span>
-          <span>Assistant: <%= repository.assistant_provider %></span>
-          <span>Embeddings: <%= repository.embedding_provider %></span>
+  <div class="modal-overlay is-hidden" id="repository-ingestion-history-modal" data-modal>
+    <div class="modal-dialog impact-help-dialog repository-ingestion-history-dialog" role="dialog" aria-modal="true" aria-labelledby="repository-ingestion-history-title">
+      <div class="section-title modal-header">
+        <div>
+          <h2 id="repository-ingestion-history-title">Ingestion History</h2>
+          <p class="page-copy">Recent sync runs for this repository.</p>
         </div>
+        <button type="button" class="button button-secondary button-compact" data-modal-close="repository-ingestion-history-modal">Close</button>
       </div>
 
-      <div class="hero-actions">
-        <%= link_to "Back to Repositories", repositories_path, class: "button button-secondary" %>
-        <%= link_to "Edit Repository", edit_repository_path(repository), class: "button button-secondary" %>
-        <%= link_to "AI Settings", edit_settings_path, class: "button button-secondary" %>
-        <%= link_to "Assistant", assistant_repository_path(repository), class: "button button-secondary" %>
-        <%= link_to "Search Chunks", search_repository_path(repository), class: "button button-secondary" %>
-        <%= button_to "Force Re-sync", resync_repository_path(repository), method: :post, class: "button button-primary" %>
+      <div class="repository-ingestion-history-content">
+        <div class="metrics-grid repository-ingestion-history-stats">
+          <article class="metric">
+            <span class="metric-label">Runs</span>
+            <span class="metric-value"><%= recent_ingestions.size %></span>
+          </article>
+          <article class="metric">
+            <span class="metric-label">Completed</span>
+            <span class="metric-value"><%= recent_ingestions.count(&:completed?) %></span>
+          </article>
+          <article class="metric">
+            <span class="metric-label">Failed</span>
+            <span class="metric-value"><%= recent_ingestions.count(&:failed?) %></span>
+          </article>
+          <article class="metric">
+            <span class="metric-label">Active</span>
+            <span class="metric-value"><%= recent_ingestions.count(&:active?) %></span>
+          </article>
+          <article class="metric">
+            <span class="metric-label">Forced Rebuilds</span>
+            <span class="metric-value"><%= recent_ingestions.count(&:force_rebuild) %></span>
+          </article>
+        </div>
+
+        <div class="table-scroll audit-log-table-shell impact-help-table-shell ingestion-history-table-shell">
+        <% if recent_ingestions.any? %>
+          <table class="data-table audit-log-table ingestion-history-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Status</th>
+                <th>Branch</th>
+                <th>Mode</th>
+                <th>Commit SHA</th>
+                <th>Started</th>
+                <th>Finished</th>
+                <th>Duration</th>
+                <th>Error</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% recent_ingestions.each do |ingestion| %>
+                <tr>
+                  <td><%= ingestion.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+                  <td><span class="status-pill status-<%= ingestion.status %>"><%= ingestion.status.humanize %></span></td>
+                  <td><%= ingestion.branch_name %></td>
+                  <td><%= ingestion.force_rebuild? ? "Forced" : "Normal" %></td>
+                  <td><span class="table-code-cell"><%= ingestion.commit_sha.presence || "Not available" %></span></td>
+                  <td><%= ingestion.started_at ? ingestion.started_at.strftime("%Y-%m-%d %H:%M") : "Not started" %></td>
+                  <td><%= ingestion.finished_at ? ingestion.finished_at.strftime("%Y-%m-%d %H:%M") : "Not finished" %></td>
+                  <td>
+                    <% if ingestion.started_at && ingestion.finished_at %>
+                      <%= distance_of_time_in_words(ingestion.started_at, ingestion.finished_at) %>
+                    <% else %>
+                      —
+                    <% end %>
+                  </td>
+                  <td><%= ingestion.error_message.presence || "None" %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% else %>
+          <section class="empty-state workspace-empty overview-empty-state">
+            <h2>No ingestion history yet</h2>
+            <p>Completed and failed sync runs will appear here once repository processing starts.</p>
+          </section>
+        <% end %>
+        </div>
       </div>
     </div>
-
-    <div class="hero-stats">
-      <div class="hero-stat">
-        <div class="hero-stat-value"><%= code_files_count %></div>
-        <span class="hero-stat-label">Files</span>
-      </div>
-      <div class="hero-stat">
-        <div class="hero-stat-value"><%= code_chunks_count %></div>
-        <span class="hero-stat-label">Chunks</span>
-      </div>
-      <div class="hero-stat">
-        <div class="hero-stat-value"><%= entities_count %></div>
-        <span class="hero-stat-label">Entities</span>
-      </div>
-      <div class="hero-stat">
-        <div class="hero-stat-value"><%= relationships_count %></div>
-        <span class="hero-stat-label">Relationships</span>
-      </div>
-      <div class="hero-stat">
-        <div class="hero-stat-value"><%= routes_count %></div>
-        <span class="hero-stat-label">Routes</span>
-      </div>
-    </div>
-  </section>
-
-  <div class="summary-grid">
-    <section class="card card-muted">
-      <div class="section-title">
-        <div>
-          <h2>Assistant</h2>
-          <p class="page-copy">Inherited from centralized user settings.</p>
-        </div>
-        <%= link_to "Manage", edit_settings_path, class: "button button-secondary" %>
-      </div>
-
-      <dl class="meta-grid">
-        <div>
-          <dt>Provider</dt>
-          <dd><%= repository.assistant_provider %></dd>
-        </div>
-        <div>
-          <dt>Model</dt>
-          <dd><%= repository.assistant_model %></dd>
-        </div>
-      </dl>
-    </section>
-
-    <section class="card card-muted">
-      <div class="section-title">
-        <div>
-          <h2>Embeddings</h2>
-          <p class="page-copy">Inherited from centralized user settings.</p>
-        </div>
-        <%= link_to "Manage", edit_settings_path, class: "button button-secondary" %>
-      </div>
-
-      <dl class="meta-grid">
-        <div>
-          <dt>Provider</dt>
-          <dd><%= repository.embedding_provider %></dd>
-        </div>
-        <div>
-          <dt>Model</dt>
-          <dd><%= repository.embedding_model %></dd>
-        </div>
-        <div>
-          <dt>Ollama endpoint</dt>
-          <dd><%= repository.ollama_base_url %></dd>
-        </div>
-      </dl>
-    </section>
   </div>
 
-  <div class="detail-grid">
-    <section class="card">
-      <div class="section-title">
+  <div class="modal-overlay is-hidden" id="repository-audit-log-modal" data-modal>
+    <div class="modal-dialog impact-help-dialog" role="dialog" aria-modal="true" aria-labelledby="repository-audit-log-title">
+      <div class="section-title modal-header">
         <div>
-          <h2>Repository Details</h2>
-          <p class="page-copy">Core tracking and ingestion metadata.</p>
-        </div>
-        <%= link_to "Add Another", new_repository_path, class: "button button-secondary" %>
-      </div>
-
-      <dl class="meta-grid">
-        <div>
-          <dt>Status</dt>
-          <dd><span class="status-pill status-<%= repository.status %>"><%= repository.status.humanize %></span></dd>
-        </div>
-        <div>
-          <dt>Tracked branch</dt>
-          <dd><%= repository.tracked_branch %></dd>
-        </div>
-        <div>
-          <dt>Default branch</dt>
-          <dd><%= repository.default_branch %></dd>
-        </div>
-        <div>
-          <dt>Visibility</dt>
-          <dd><%= repository.visibility.humanize %></dd>
-        </div>
-        <div>
-          <dt>Provider</dt>
-          <dd><%= repository.provider %></dd>
-        </div>
-        <div>
-          <dt>Last commit SHA</dt>
-          <dd><%= repository.last_commit_sha.presence || "Not available" %></dd>
-        </div>
-        <div>
-          <dt>Last ingested at</dt>
-          <dd><%= repository.last_ingested_at ? repository.last_ingested_at.strftime("%Y-%m-%d %H:%M") : "Not yet" %></dd>
-        </div>
-      </dl>
-    </section>
-
-    <section class="card">
-      <div class="section-title">
-        <div>
-          <h2>Latest Ingestion</h2>
-          <p class="page-copy">Most recent sync execution status.</p>
-        </div>
-      </div>
-
-      <% if latest_ingestion.present? %>
-        <dl class="meta-grid">
-          <div>
-            <dt>Status</dt>
-            <dd><span class="status-pill status-<%= latest_ingestion.status %>"><%= latest_ingestion.status.humanize %></span></dd>
-          </div>
-          <div>
-            <dt>Branch</dt>
-            <dd><%= latest_ingestion.branch_name %></dd>
-          </div>
-          <div>
-            <dt>Commit SHA</dt>
-            <dd><%= latest_ingestion.commit_sha.presence || "Not available" %></dd>
-          </div>
-          <div>
-            <dt>Started</dt>
-            <dd><%= latest_ingestion.started_at ? latest_ingestion.started_at.strftime("%Y-%m-%d %H:%M") : "Not started" %></dd>
-          </div>
-          <div>
-            <dt>Finished</dt>
-            <dd><%= latest_ingestion.finished_at ? latest_ingestion.finished_at.strftime("%Y-%m-%d %H:%M") : "Not finished" %></dd>
-          </div>
-          <div>
-            <dt>Error</dt>
-            <dd><%= latest_ingestion.error_message.presence || "None" %></dd>
-          </div>
-        </dl>
-      <% else %>
-        <p class="page-copy">No ingestion run exists yet.</p>
-      <% end %>
-    </section>
-
-    <section class="card">
-      <div class="section-title">
-        <div>
-          <h2>Recent Ingestions</h2>
-          <p class="page-copy">Recent sync history for this repository.</p>
-        </div>
-      </div>
-
-      <% if recent_ingestions.any? %>
-        <div class="timeline-list">
-          <% recent_ingestions.each do |ingestion| %>
-            <article class="timeline-item">
-              <span class="timeline-title"><%= "#{ingestion.status.humanize} · #{ingestion.branch_name}" %></span>
-              <span class="timeline-meta"><%= ingestion.created_at.strftime("%Y-%m-%d %H:%M") %></span>
-            </article>
-          <% end %>
-        </div>
-      <% else %>
-        <p class="page-copy">No ingestion history yet.</p>
-      <% end %>
-    </section>
-
-    <section class="card">
-      <div class="section-title">
-        <div>
-          <h2>Audit Log</h2>
+          <h2 id="repository-audit-log-title">Audit Log</h2>
           <p class="page-copy">System-recorded repository events.</p>
         </div>
+        <button type="button" class="button button-secondary button-compact" data-modal-close="repository-audit-log-modal">Close</button>
       </div>
 
-      <% if recent_audit_logs.any? %>
-        <div class="timeline-list">
-          <% recent_audit_logs.each do |log| %>
-            <article class="timeline-item">
-              <span class="timeline-title"><%= log.message.presence || log.event %></span>
-              <span class="timeline-meta"><%= log.created_at.strftime("%Y-%m-%d %H:%M") %></span>
-            </article>
+      <div class="table-scroll audit-log-table-shell impact-help-table-shell">
+        <% if recent_audit_logs.any? %>
+          <table class="data-table audit-log-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Event</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% recent_audit_logs.each do |log| %>
+                <tr>
+                  <td><%= log.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+                  <td><%= log.message.presence || log.event %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% else %>
+          <section class="empty-state workspace-empty overview-empty-state">
+            <h2>No audit events yet</h2>
+            <p>System activity will appear here as this repository is synced and queried.</p>
+          </section>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="repository-overview-stack">
+    <section class="card repository-workspace-summary">
+      <div class="repository-workspace-summary-copy">
+        <h2><%= repository.name %></h2>
+        <p class="card-url repository-workspace-summary-url"><%= repository.github_url %></p>
+      </div>
+
+      <div class="meta-inline repository-workspace-meta">
+        <span><strong>Status:</strong> <%= repository.status.humanize %></span>
+        <span><strong>Branch:</strong> <%= repository.tracked_branch %></span>
+        <span><strong>Visibility:</strong> <%= repository.visibility.humanize %></span>
+        <span><strong>Provider:</strong> <%= repository.provider %></span>
+        <span><strong>Assistant:</strong> <%= repository.assistant_provider %></span>
+        <span><strong>Embeddings:</strong> <%= repository.embedding_provider %></span>
+        <span><strong>Last sync:</strong> <%= repository.last_ingested_at ? repository.last_ingested_at.strftime("%Y-%m-%d %H:%M") : "Not yet" %></span>
+      </div>
+    </section>
+
+    <section class="metrics-grid repository-overview-metrics-grid">
+      <article class="card metric repository-overview-metric-card">
+        <span class="metric-label">Files</span>
+        <span class="metric-value"><%= code_files_count %></span>
+      </article>
+      <article class="card metric repository-overview-metric-card">
+        <span class="metric-label">Chunks</span>
+        <span class="metric-value"><%= code_chunks_count %></span>
+      </article>
+      <article class="card metric repository-overview-metric-card">
+        <span class="metric-label">Entities</span>
+        <span class="metric-value"><%= entities_count %></span>
+      </article>
+      <article class="card metric repository-overview-metric-card">
+        <span class="metric-label">Relations</span>
+        <span class="metric-value"><%= relationships_count %></span>
+      </article>
+    </section>
+
+    <section class="overview-layout repository-overview-layout-refined">
+      <div class="overview-main">
+        <section class="card repository-overview-panel">
+          <div class="section-title">
+            <div>
+              <h2>Latest Ingestion</h2>
+              <p class="page-copy">Most recent sync execution status and commit snapshot.</p>
+            </div>
+          </div>
+
+          <% if latest_ingestion.present? %>
+            <dl class="meta-grid">
+              <div>
+                <dt>Status</dt>
+                <dd><span class="status-pill status-<%= latest_ingestion.status %>"><%= latest_ingestion.status.humanize %></span></dd>
+              </div>
+              <div>
+                <dt>Branch</dt>
+                <dd><%= latest_ingestion.branch_name %></dd>
+              </div>
+              <div>
+                <dt>Commit SHA</dt>
+                <dd><%= latest_ingestion.commit_sha.presence || "Not available" %></dd>
+              </div>
+              <div>
+                <dt>Started</dt>
+                <dd><%= latest_ingestion.started_at ? latest_ingestion.started_at.strftime("%Y-%m-%d %H:%M") : "Not started" %></dd>
+              </div>
+              <div>
+                <dt>Finished</dt>
+                <dd><%= latest_ingestion.finished_at ? latest_ingestion.finished_at.strftime("%Y-%m-%d %H:%M") : "Not finished" %></dd>
+              </div>
+              <div>
+                <dt>Error</dt>
+                <dd><%= latest_ingestion.error_message.presence || "None" %></dd>
+              </div>
+            </dl>
+          <% else %>
+            <section class="empty-state workspace-empty overview-empty-state">
+              <h2>No ingestion run yet</h2>
+              <p>Queue the first re-sync to build repository chunks, embeddings, and grounded assistant context.</p>
+            </section>
           <% end %>
-        </div>
-      <% else %>
-        <p class="page-copy">No audit events recorded yet.</p>
-      <% end %>
+        </section>
+
+        <section class="card repository-overview-panel">
+          <div class="section-title">
+            <div>
+              <h2>Repository Details</h2>
+              <p class="page-copy">Core tracking, sync scope, and source metadata.</p>
+            </div>
+          </div>
+
+          <dl class="meta-grid">
+            <div>
+              <dt>Default branch</dt>
+              <dd><%= repository.default_branch %></dd>
+            </div>
+            <div>
+              <dt>Tracked branch</dt>
+              <dd><%= repository.tracked_branch %></dd>
+            </div>
+            <div>
+              <dt>Visibility</dt>
+              <dd><%= repository.visibility.humanize %></dd>
+            </div>
+            <div>
+              <dt>Provider</dt>
+              <dd><%= repository.provider %></dd>
+            </div>
+            <div>
+              <dt>Last commit SHA</dt>
+              <dd><%= repository.last_commit_sha.presence || "Not available" %></dd>
+            </div>
+            <div>
+              <dt>Last ingested at</dt>
+              <dd><%= repository.last_ingested_at ? repository.last_ingested_at.strftime("%Y-%m-%d %H:%M") : "Not yet" %></dd>
+            </div>
+          </dl>
+        </section>
+      </div>
+
+      <aside class="overview-side">
+        <section class="card repository-overview-panel">
+          <div class="section-title">
+            <div>
+              <h2>AI Configuration</h2>
+              <p class="page-copy">Current assistant and embedding runtime selection.</p>
+            </div>
+          </div>
+
+          <dl class="meta-grid compact-meta-grid">
+            <div>
+              <dt>Assistant provider</dt>
+              <dd><%= repository.assistant_provider %></dd>
+            </div>
+            <div>
+              <dt>Assistant model</dt>
+              <dd><%= repository.assistant_model %></dd>
+            </div>
+            <div>
+              <dt>Embedding provider</dt>
+              <dd><%= repository.embedding_provider %></dd>
+            </div>
+            <div>
+              <dt>Embedding model</dt>
+              <dd><%= repository.embedding_model %></dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="card repository-overview-panel">
+          <div class="section-title">
+            <div>
+              <h2>Graph Snapshot</h2>
+              <p class="page-copy">Indexed relationship surface available to search and impact analysis.</p>
+            </div>
+          </div>
+
+          <dl class="meta-grid compact-meta-grid">
+            <div>
+              <dt>Routes</dt>
+              <dd><%= routes_count %></dd>
+            </div>
+            <div>
+              <dt>Dependency edges</dt>
+              <dd><%= dependency_edges_count %></dd>
+            </div>
+            <div>
+              <dt>Entity relations</dt>
+              <dd><%= relationships_count %></dd>
+            </div>
+          </dl>
+        </section>
+      </aside>
     </section>
   </div>
 </div>

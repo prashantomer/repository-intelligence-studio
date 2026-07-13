@@ -5,10 +5,19 @@ const bindAssistantComposer = () => {
     if (form.dataset.assistantBound === "true") return
     form.dataset.assistantBound = "true"
 
-    form.addEventListener("turbo:submit-start", () => {
-      const input = form.querySelector("[data-assistant-form-target='input']")
-      const submit = form.querySelector("[data-assistant-form-target='submit']")
+    const input = form.querySelector("[data-assistant-form-target='input']")
+    const submit = form.querySelector("[data-assistant-form-target='submit']")
 
+    input?.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || event.shiftKey) return
+      if (event.isComposing || input.readOnly || submit?.disabled) return
+      if (!input.value.trim()) return
+
+      event.preventDefault()
+      form.requestSubmit()
+    })
+
+    form.addEventListener("turbo:submit-start", () => {
       if (submit) {
         submit.dataset.originalLabel = submit.value
         submit.value = "Sending..."
@@ -19,9 +28,6 @@ const bindAssistantComposer = () => {
     })
 
     form.addEventListener("turbo:submit-end", (event) => {
-      const input = form.querySelector("[data-assistant-form-target='input']")
-      const submit = form.querySelector("[data-assistant-form-target='submit']")
-
       if (submit) {
         submit.value = submit.dataset.originalLabel || "Send"
         submit.disabled = false
@@ -170,13 +176,132 @@ const bindModelPicker = () => {
   })
 }
 
+const bindImpactForm = () => {
+  document.querySelectorAll("[data-impact-form]").forEach((form) => {
+    if (form.dataset.impactBound === "true") return
+    form.dataset.impactBound = "true"
+
+    const input = form.querySelector("[data-impact-form-target='input']")
+    const submit = form.querySelector("[data-impact-form-target='submit']")
+
+    form.addEventListener("turbo:submit-start", () => {
+      if (submit) {
+        submit.dataset.originalLabel = submit.value
+        submit.value = "Analyzing..."
+        submit.disabled = true
+      }
+
+      if (input) input.readOnly = true
+    })
+
+    form.addEventListener("turbo:submit-end", () => {
+      if (submit) {
+        submit.value = submit.dataset.originalLabel || "Analyze Impact"
+        submit.disabled = false
+      }
+
+      if (input) {
+        input.readOnly = false
+        input.focus()
+      }
+    })
+  })
+}
+
+const bindTabs = () => {
+  document.querySelectorAll("[data-tab-group]").forEach((group) => {
+    if (group.dataset.tabsBound === "true") return
+    group.dataset.tabsBound = "true"
+
+    const buttons = Array.from(group.querySelectorAll("[data-tab-target]"))
+    const panelIds = buttons.map((button) => button.dataset.tabTarget)
+    const scope = group.parentElement || document
+    const panels = Array.from(scope.querySelectorAll("[data-tab-panel]")).filter((panel) => panelIds.includes(panel.dataset.tabPanel))
+
+    const showPanel = (panelId) => {
+      buttons.forEach((button) => {
+        button.classList.toggle("is-active", button.dataset.tabTarget === panelId)
+      })
+
+      panels.forEach((panel) => {
+        panel.classList.toggle("is-hidden", panel.dataset.tabPanel !== panelId)
+      })
+    }
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => showPanel(button.dataset.tabTarget))
+    })
+  })
+}
+
+const bindModals = () => {
+  document.querySelectorAll("[data-modal-open]").forEach((trigger) => {
+    if (trigger.dataset.modalBound === "true") return
+    trigger.dataset.modalBound = "true"
+
+    trigger.addEventListener("click", () => {
+      const modal = document.getElementById(trigger.dataset.modalOpen)
+      if (!modal) return
+
+      modal.classList.remove("is-hidden")
+      document.body.classList.add("modal-open")
+    })
+  })
+
+  document.querySelectorAll("[data-modal-close]").forEach((trigger) => {
+    if (trigger.dataset.modalCloseBound === "true") return
+    trigger.dataset.modalCloseBound = "true"
+
+    trigger.addEventListener("click", () => {
+      const modal = document.getElementById(trigger.dataset.modalClose)
+      if (!modal) return
+
+      modal.classList.add("is-hidden")
+      document.body.classList.remove("modal-open")
+    })
+  })
+
+  document.querySelectorAll("[data-modal]").forEach((modal) => {
+    if (modal.dataset.modalOverlayBound === "true") return
+    modal.dataset.modalOverlayBound = "true"
+
+    modal.addEventListener("click", (event) => {
+      if (event.target !== modal) return
+
+      modal.classList.add("is-hidden")
+      document.body.classList.remove("modal-open")
+    })
+  })
+
+  if (!document.body.dataset.modalEscapeBound) {
+    document.body.dataset.modalEscapeBound = "true"
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return
+
+      document.querySelectorAll("[data-modal]:not(.is-hidden)").forEach((modal) => {
+        modal.classList.add("is-hidden")
+      })
+      document.body.classList.remove("modal-open")
+    })
+  }
+
+  if (!document.querySelector("[data-modal]:not(.is-hidden)")) {
+    document.body.classList.remove("modal-open")
+  }
+}
+
 const bindAppUi = () => {
   bindAssistantComposer()
+  bindImpactForm()
   bindModelPicker()
+  bindTabs()
+  bindModals()
 }
 
 document.addEventListener("turbo:load", bindAppUi)
 document.addEventListener("turbo:render", bindAppUi)
+document.addEventListener("turbo:frame-load", bindAppUi)
 document.addEventListener("turbo:before-stream-render", () => {
   setTimeout(() => {
     bindAppUi()

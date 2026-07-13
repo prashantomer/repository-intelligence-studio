@@ -8,6 +8,307 @@
 
 ## Progress Log
 
+### Step 24 — Impact analyzer drill-down tables
+
+- Status: `completed`
+- Goal:
+  - turn the dedicated Impact Analyzer page into a more useful inspection surface
+  - separate upstream, downstream, routes, jobs, affected entities, and files instead of flattening everything into one summary
+- Output:
+  - added upstream and downstream entity drill-down tables for live analyses
+  - persisted upstream and downstream entities into saved impact reports
+  - added routes and background jobs drill-down tables for live and saved reports
+  - expanded the impact workspace layout to support three-column dependency inspection
+- Notes:
+  - this materially improves non-chat investigation because users can now inspect dependency direction explicitly
+  - provider-backed narrative/risk commentary is still the next major impact-analysis enhancement
+
+### Step 25 — Impact analyzer guidance and narration
+
+- Status: `completed`
+- Goal:
+  - make the Impact Analyzer easier to use without external explanation
+  - add provider-backed review guidance on top of deterministic graph evidence
+- Output:
+  - added `Analysis::ImpactNarrationService` for provider-backed impact guidance with deterministic fallback
+  - persisted narration, checklist, and fallback metadata into saved impact reports
+  - added `How To Use` instructions directly on the Impact Analyzer page
+  - surfaced narrated review guidance and suggested checklist in the dedicated impact workspace
+- Notes:
+  - remote providers are used only as an interpretation layer on top of repository evidence
+  - local fallback remains available when the configured provider is unavailable or disabled
+
+### Step 26 — Language-aware impact prompt shaping
+
+- Status: `completed`
+- Goal:
+  - improve impact narration quality across Rails, Python, Node/TypeScript, and Java/JVM repositories
+  - stop treating every repository as if it has the same architectural patterns
+- Output:
+  - added `config/repository_profiles.yml` for maintainable repository-profile heuristics and impact-review focus
+  - added `Codebase::RepositoryProfileService` to infer repository profile from indexed files, languages, and framework markers
+  - updated `Analysis::ImpactNarrationService` to inject profile label, dominant languages, matched markers, and framework-specific review focus into prompts
+  - persisted inferred profile context into saved impact reports and surfaced it in the Impact Analyzer UI
+- Notes:
+  - this improves narration quality even before deeper language-specific graph extraction is added
+  - parser coverage still limits how much structured evidence exists for non-Rails repositories
+
+### Step 27 — Impact analyzer input guidance refinement
+
+- Status: `completed`
+- Goal:
+  - make the Impact Analyzer easier to use for first-time users
+  - clarify both the kind of input the analyzer expects and the kind of output it produces
+- Output:
+  - changed the input label and placeholder to focus on “what are you changing?”
+  - added concrete example inputs directly under the form
+  - expanded the `How To Use` panel to explain:
+    - best input types
+    - what to avoid
+    - what repository evidence is read
+    - what output the user should expect
+    - current limitations
+- Notes:
+  - this is a usability improvement only; it does not change the underlying analysis logic
+
+### Step 28 — Impact analyzer help popup
+
+- Status: `completed`
+- Goal:
+  - move usage instructions out of the sidebar to reduce clutter
+  - make help available on demand from the top action area
+- Output:
+  - moved `How To Use` guidance into a modal popup on the Impact Analyzer page
+  - added a `Help` button to the top action row
+  - added reusable modal open/close behavior with overlay click and `Escape` support
+- Notes:
+  - this keeps the workspace focused while still preserving usage guidance nearby
+
+### Step 29 — Impact history popup and lookup hardening
+
+- Status: `completed`
+- Goal:
+  - move saved report history out of the sidebar and into an on-demand popup
+  - reduce false-empty impact lookups caused by strict exact-name matching
+- Output:
+  - moved saved report history to a header `History` popup with report details and quick actions
+  - removed the saved-reports block from the sidebar to keep the workspace narrower
+  - made impact example inputs repository-aware using actual extracted entity names when available
+  - hardened entity lookup by stripping wrapping quotes/backticks and allowing namespace/file/partial-name matching
+  - added closer failure messaging with suggested entity names when no exact match exists
+- Notes:
+  - if impact analysis still fails for an expected identifier, the likely remaining cause is missing entity extraction for that language/framework rather than the lookup path itself
+
+### Step 30 — Turbo-driven impact analyzer
+
+- Status: `completed`
+- Goal:
+  - make the Impact Analyzer update in place instead of doing a full page reload
+  - give the form a clearer pending state during analysis requests
+- Output:
+  - wrapped the impact page in a dedicated Turbo frame
+  - routed impact form submissions back into that frame for in-place updates
+  - added `Analyzing...` submit-state behavior with temporary input locking
+- Notes:
+  - this is synchronous request/response over Turbo, not a background-job flow like assistant chat
+  - header actions, modals, lookup errors, and results now refresh without a full page navigation
+
+### Step 31 — Turbo frame modal rebinding fix
+
+- Status: `completed`
+- Goal:
+  - restore modal button behavior after Impact Analyzer Turbo frame refreshes
+- Output:
+  - added `turbo:frame-load` UI rebinding for modal and form behaviors in `app/javascript/application.js`
+- Notes:
+  - the issue was not the `History` button markup itself; it was the missing JavaScript rebind after frame-driven DOM replacement
+
+### Step 32 — Saved impact report modal scroll fix
+
+- Status: `completed`
+- Goal:
+  - fix the saved-report history popup so long report lists scroll cleanly inside the modal
+- Output:
+  - converted the modal table shell to a flexed inner scroll region with bounded height
+- Notes:
+  - this keeps the modal header pinned while the saved report list itself scrolls
+
+### Step 23 — Dedicated impact analyzer workspace
+
+- Status: `completed`
+- Goal:
+  - move impact analysis out of the crowded overview page into a dedicated repository workspace
+  - make saved reports and live analyses inspectable in one focused surface
+- Output:
+  - added `GET /repositories/:id/impact` as a dedicated Impact Analyzer page
+  - added repository sidebar navigation for `Impact Analyzer`
+  - added live analysis workspace with affected entities, impacted files, and evidence display
+  - added saved-report browsing from the new impact page
+  - linked the new workspace from repository overview, assistant, and search
+- Notes:
+  - this is the first dedicated product surface for impact analysis
+  - the next step can add richer drill-downs for routes/jobs and optional provider-backed risk narration
+
+### Step 22 — Impact report persistence
+
+- Status: `completed`
+- Goal:
+  - persist repository-scoped impact analysis results instead of keeping them as transient page output only
+  - expose a working saved-report layer before adding LLM-backed impact narration
+- Output:
+  - added `ImpactReport` persistence with `query`, `result_json`, and `generated_at`
+  - updated `Analysis::ImpactAnalysisService` to save successful analyses automatically
+  - surfaced recent saved impact reports on the repository overview page
+  - added safe fallback behavior so the app still works before the new migration is run
+- Notes:
+  - local sandbox validation could not run the migration because PostgreSQL socket access is blocked here
+  - once `bundle exec rails db:migrate` is run in your local app environment, reports will persist and list normally
+
+### Step 21 — Impact analysis summary layer
+
+- Status: `completed`
+- Goal:
+  - combine dependency traversal evidence with semantic retrieval into a repository-scoped impact estimate
+  - surface a first concrete answer to `what breaks if X changes?`
+- Output:
+  - added `app/services/analysis/impact_analysis_service.rb`
+  - combined graph traversal counts, related routes/jobs/files, and top retrieved code chunks into a deterministic impact summary
+  - added risk-level classification and retrieved evidence citations on the repository overview page
+- Notes:
+  - this is the first impact-report layer; it is deterministic and repository-scoped
+  - a later step can add provider-generated risk summarization or persisted `impact_reports`
+
+### Step 20 — Dependency traversal queries and lookup UI
+
+- Status: `completed`
+- Goal:
+  - build the first queryable traversal layer on top of normalized dependency edges
+  - let repository users inspect upstream, downstream, routes, jobs, and related files for a named entity
+- Output:
+  - added `app/queries/dependency_graph/traversal_query.rb` for repository-scoped graph traversal
+  - added dependency lookup handling to the repository show flow
+  - added a repository overview lookup form and result panels for:
+    - upstream dependencies
+    - downstream dependents
+    - routes touching the graph path
+    - jobs touching the graph path
+    - related files
+- Notes:
+  - this is an evidence/traversal step, not the final LLM-backed impact report yet
+  - next Phase 5 step should combine these traversal results with retrieval and risk summarization
+
+### Step 19 — Dependency graph edge foundation
+
+- Status: `completed`
+- Goal:
+  - start Phase 5 by normalizing current extracted relationships into a dedicated graph edge layer
+  - make dependency graph readiness visible on the repository workspace
+- Output:
+  - added `dependency_edges` persistence and `DependencyEdge` model
+  - added `Codebase::DependencyEdgeBuilderService` to normalize entity relationships and route-to-controller links
+  - wired dependency edge rebuilding into repository indexing
+  - surfaced dependency edge totals and edge-type breakdown on the repository overview page
+- Notes:
+  - this is the graph foundation step, not the full impact-analysis feature yet
+  - next Phase 5 step should add traversal queries and impact-oriented lookup services
+
+### Assistant Context Upgrade — Conversation-aware repository Q&A
+
+- Status: `completed`
+- Goal:
+  - make follow-up questions keep thread context instead of behaving like isolated one-off prompts
+  - improve retrieval quality for short or referential questions such as `what about holdings?` or `tell me more`
+- Output:
+  - added `app/services/assistant/conversation_context_service.rb` to build recent thread transcript and a context-aware retrieval query
+  - updated answer generation to pass recent conversation context into retrieval, provider prompting, and local fallback answers
+  - updated the assistant job path so background generation excludes the pending placeholder and uses the active conversation thread
+  - updated the composer hints to make thread-context reuse explicit in the UI
+- Notes:
+  - repository chunks remain the source of truth; prior messages are used only to resolve follow-up references
+  - this improves continuity for repository conversations without turning the assistant into a generic ungrounded chat
+
+### UI Refresh Step 7 — Repository overview tabs
+
+- Status: `completed`
+- Goal:
+  - replace the long repository overview card stack with an in-page tabbed workspace
+  - keep the repository page compact while still exposing details, ingestion, config, audit, and actions
+- Output:
+  - replaced the overview two-column stack with in-page overview tabs
+  - added lightweight JavaScript tab switching for repository overview sections
+  - grouped content into `Details`, `Ingestion`, `Config`, `Audit`, and `Actions`
+- Notes:
+  - this keeps the repository page flatter and more admin-panel-like without needing new routes
+  - repository-level top navigation to `Overview`, `Assistant`, and `Search` remains unchanged
+
+### UI Refresh Step 6 — Admin-panel polish across app
+
+- Status: `completed`
+- Goal:
+  - propagate the tighter admin-panel density from the repositories index across the rest of the app
+  - reduce bulky spacing, narrative copy, and oversized panels on assistant, search, settings, and forms
+- Output:
+  - tightened shared shell spacing, sidebar density, button scale, card padding, and form controls
+  - converted assistant, search, settings, and repository setup screens to compact shared headers
+  - reduced assistant panel/chat/composer density and tightened search results into slimmer result rows
+  - refreshed repository new/edit and centralized settings pages to match the admin-panel style
+- Notes:
+  - the app now shares one denser visual system instead of the earlier mixed dashboard/workspace feel
+  - the repositories page remains the strongest admin-panel surface and now sets the tone for the rest of the UI
+
+### UI Refresh Step 5 — Repository overview
+
+- Status: `completed`
+- Goal:
+  - make the repository overview the primary operational workspace screen
+  - separate core repository/sync information from supporting configuration and audit context
+- Output:
+  - reorganized overview into a main content column and supporting side column
+  - elevated latest ingestion and recent sync history into the primary reading path
+  - moved assistant, embeddings, audit log, and quick actions into compact support panels
+  - added overview-specific layout helpers and compact support-panel styling
+- Notes:
+  - repository overview now acts as the canonical repository workspace layout
+  - dedicated `Ingestions` and `Logs` pages remain future enhancements; overview still surfaces that information now
+
+### UI Refresh Step 4 — Repositories index
+
+- Status: `completed`
+- Goal:
+  - replace the old hero-heavy repositories landing screen with a denser operational index
+  - improve scanability of repository status, AI configuration, and ingestion footprint
+- Output:
+  - replaced the index hero section with shared workspace header and compact metric row
+  - converted repository listing into row-based operational cards instead of large generic cards
+  - added index-specific toolbar and repository row styles for denser scanning
+- Notes:
+  - the repositories page now behaves more like a control surface than a landing page
+  - filtering and sorting controls are still deferred; this step focuses on layout and hierarchy only
+
+### UI Refresh Step 3 — Shared page primitives
+
+- Status: `completed`
+- Goal:
+  - introduce reusable workspace-level UI primitives before page-by-page screen refresh
+  - establish shared repository tab navigation and compact metric/header patterns
+- Output:
+  - added shared partials:
+    - `app/views/shared/_page_header.html.erb`
+    - `app/views/shared/_repository_tabs.html.erb`
+    - `app/views/shared/_metric_row.html.erb`
+  - added shared CSS primitives for:
+    - workspace headers
+    - repository sub-navigation tabs
+    - compact metric rows
+    - standard panel/timeline helper classes
+  - wired repository tabs and shared headers into:
+    - repository overview
+    - repository assistant
+    - repository search
+- Notes:
+  - `Ingestions` and `Logs` are intentionally shown as disabled future tabs for structural consistency
+  - deeper page layout refresh remains for the next screen-specific steps
+
 ### Step 1 — Rails application bootstrap
 
 - Status: `completed`
@@ -845,9 +1146,202 @@
 
 ### Step 18 — Provider call audit logging
 
-- Status: `pending`
+- Status: `completed`
 - Goal:
   - record every provider call in the database for later inspection
   - capture usage, latency, success/failure, and estimated cost metadata for assistant and embedding operations
   - add a first internal log page backed by database records
   - defer realtime streaming/tailing UI until after the database-backed logger is stable
+- Output:
+  - added `provider_call_logs` persistence with repository/user/provider/model/usage/latency/cost fields
+  - added `Ai::ProviderCallLogRecorder` and `Ai::CostEstimator` for structured provider audit capture
+  - wired assistant provider calls and remote embedding calls into database logging
+  - added internal `Provider Logs` page with repository/provider/operation/status filtering
+  - added sidebar navigation entry for provider log review
+- Validation:
+  - `ruby -c` passed for the new model, controller, and logging service files
+  - ERB parse check passed for `app/views/provider_call_logs/index.html.erb`
+- Notes:
+  - realtime log streaming is still deferred; this step is database-backed history only
+  - local deterministic embeddings and local grounded answers are not logged as remote provider calls
+  - apply the new migration before using the page in the running app
+
+### Step 33 — Documentation structure and feature guides
+
+- Status: `completed`
+- Goal:
+  - move planning, progress, flow, and presentation documents under a single `documents/` tree
+  - maintain feature-wise documentation with both non-technical and technical views
+  - update the main `README` so feature links point directly to the detailed documentation
+- Output:
+  - moved planning docs into `documents/planning`
+  - moved progress tracking into `documents/progress`
+  - moved request/response flow documentation into `documents/architecture`
+  - moved the presentation deck into `documents/presentations`
+  - added per-feature documentation files in `documents/features`
+  - updated `README.md` with documentation entry points and feature anchors
+- Notes:
+  - the documentation structure now separates planning, architecture, progress, presentations, and feature-level explanation cleanly
+
+### Step 34 — Hard delete repository with persistent deletion log
+
+- Status: `completed`
+- Goal:
+  - let users permanently remove a repository and all repository-scoped data
+  - retain one non-blocking deletion log record per deleted repository id
+- Output:
+  - added `RepositoryDeletionLog` persistence and migration
+  - added `Repositories::DestroyService` to snapshot counts, destroy repository-owned records, and clean workspace directories
+  - added `DELETE /repositories/:id` and repository deletion UI with destructive confirmation
+  - added read-only `Repository Deletion Logs` page and sidebar navigation entry
+  - added focused request/service specs for deletion flow coverage
+- Validation:
+  - `ruby -c` passed for new model, service, and controllers
+  - `bin/rails routes` confirmed the new deletion-log route and repository destroy route
+- Notes:
+  - local RSpec execution is blocked in this sandbox by PostgreSQL socket restrictions
+  - run migrations before using the feature in the app
+
+### Step 35 — Provider logs workspace refresh
+
+- Status: `completed`
+- Goal:
+  - bring the provider logs screen in line with the current workspace-oriented redesign
+  - improve scanability of filters, summary counts, and execution details without changing backend behavior
+- Output:
+  - reworked `Provider Logs` into a denser operational page with a dedicated filter card and summary metric row
+  - added visible-call, success, failed, assistant, and embedding counts above the table
+  - tightened the log history panel into a full-height table workspace with improved column behavior
+  - refined detail inspection styling so request/response payload inspection remains available but less visually noisy
+  - added responsive behavior for the new summary metric row on narrower screens
+- Validation:
+  - ERB parse check passed for `app/views/provider_call_logs/index.html.erb`
+  - `ruby -c app/helpers/application_helper.rb` passed
+- Notes:
+  - this step is UI-only; filters, data source, and log semantics remain unchanged
+  - impact-analysis provider calls still appear via the existing operation filter where present
+
+### Step 36 — Shared shell and topbar refinement
+
+- Status: `completed`
+- Goal:
+  - move the app closer to the new reference by strengthening the shared shell before another page-specific pass
+  - improve sidebar hierarchy, topbar context, and global surface consistency without changing behavior
+- Output:
+  - updated global design tokens toward the lighter indigo workspace style
+  - widened the sidebar shell, increased main content padding, and restored rounded shared surfaces
+  - rebuilt sidebar brand lockup with stronger visual hierarchy and richer nav item descriptions
+  - improved current-repository sidebar card with inline status visibility
+  - added topbar subtitle support and page-specific descriptive copy through `ApplicationHelper`
+  - converted topbar metadata into compact pill items and softened shared cards, forms, chat surfaces, and tables
+- Validation:
+  - `ruby -c app/helpers/application_helper.rb` passed
+  - ERB parse checks passed for `app/views/layouts/application.html.erb` and `app/views/shared/_app_topbar.html.erb`
+- Notes:
+  - this is still a shared-foundation step; repositories, assistant, settings, search, and impact pages will need another page-level pass to fully match the reference
+
+### Step 37 — Repositories index reference alignment
+
+- Status: `completed`
+- Goal:
+  - bring the repositories landing screen closer to the reference table-first operational workspace
+  - improve top-level repository scanability using metric tiles and a denser inventory table
+- Output:
+  - added repository summary metrics for total, completed, failed, pending, and skipped repositories
+  - reworked the index body into a cleaner inventory card with subtitle and compact metadata strip
+  - replaced the old repository row grid with a structured operational data table
+  - aligned columns around repository, branch, source, indexed counts, sync status, and last synced snapshot
+  - added responsive metric behavior and retained the existing empty state for first-use flow
+- Validation:
+  - ERB parse check passed for `app/views/repositories/index.html.erb`
+- Notes:
+  - this step is visual-only; no search/filter backend behavior was added yet
+  - topbar still provides the primary page title and add action while the page focuses on the table workspace
+
+### Step 38 — Repository details workspace alignment
+
+- Status: `completed`
+- Goal:
+  - reshape the repository overview into a clearer operational workspace under the new reference system
+  - surface repository metadata, indexed counts, and latest ingestion status with better hierarchy
+- Output:
+  - added a repository summary strip with name, source URL, and key metadata chips
+  - promoted indexed footprint into a compact four-metric row for files, chunks, entities, and relations
+  - reorganized the overview body into a two-column workspace layout
+  - kept `Latest Ingestion` as the primary operational card in the main column
+  - moved repository metadata, AI configuration, and graph snapshot into cleaner supporting cards
+  - retained existing ingestion-history and audit-log modal actions without changing backend behavior
+- Validation:
+  - ERB parse check passed for `app/views/repositories/_show_content.html.erb`
+- Notes:
+  - this pass remains UI-only and intentionally does not restore the old inline dependency lookup
+  - deeper analytics treatment for impact/graph surfaces remains part of later screen-specific passes
+
+### Step 39 — AI settings workspace alignment
+
+- Status: `completed`
+- Goal:
+  - align centralized settings to the new two-column operational workspace style
+  - separate editable configuration from runtime/status support context
+- Output:
+  - reorganized the settings page into a stronger main configuration column and supporting status rail
+  - grouped runtime status, embedding baseline, and default profile summaries into dedicated support cards
+  - retained existing model-picker behavior and all existing form fields
+- Validation:
+  - ERB parse check passed for `app/views/settings/_content.html.erb`
+
+### Step 40 — Search workspace alignment
+
+- Status: `completed`
+- Goal:
+  - shift semantic search toward a compact code-search workspace
+  - replace the looser stacked results layout with a cleaner toolbar + table pattern
+- Output:
+  - added a top search toolbar card with query input and action
+  - tightened the search workspace into primary search guidance plus scope support rail
+  - converted result rendering into a structured table with chunk lines, file path, type, and preview
+- Validation:
+  - ERB parse check passed for `app/views/repositories/search.html.erb`
+
+### Step 41 — Assistant and impact workspace refinement
+
+- Status: `completed`
+- Goal:
+  - reduce box-heaviness and better align the assistant and impact analyzer with the new shared workspace shell
+- Output:
+  - refined assistant side panels and chat shell spacing under the new light indigo system
+  - promoted impact analyzer summary into metric cards and added visual section chips for result groupings
+  - preserved all Turbo, modal, and repository-scoped logic
+- Validation:
+  - ERB parse checks passed for `app/views/repositories/assistant.html.erb`
+  - ERB parse checks passed for `app/views/repositories/impact.html.erb`
+
+### Step 42 — Admin and form surface cleanup
+
+- Status: `completed`
+- Goal:
+  - bring the remaining repository forms and deletion-log view into the same shared UI system
+- Output:
+  - refreshed repository new/edit forms with grouped source and branch-tracking cards
+  - tightened repository deletion logs into a more explicit operational history card
+  - retained all existing repository create/edit/delete behavior
+- Validation:
+  - ERB parse checks passed for `app/views/repository_deletion_logs/index.html.erb`
+  - ERB parse checks passed for `app/views/repositories/_form.html.erb`
+  - ERB parse checks passed for `app/views/repositories/new.html.erb`
+  - ERB parse checks passed for `app/views/repositories/edit.html.erb`
+
+### Step 43 — UI refresh batch completion
+
+- Status: `completed`
+- Goal:
+  - complete the remaining screens under the current UI refresh plan without changing backend behavior
+- Output:
+  - finished the outstanding screen passes for settings, search, assistant, impact analyzer, repository forms, and deletion logs
+  - consolidated the shared stylesheet further so all major product surfaces now follow the same shell, spacing, card, and table language
+- Validation:
+  - helper syntax check passed for `app/helpers/application_helper.rb`
+  - ERB parse checks passed for all updated view files in this batch
+- Notes:
+  - this completes the current UI-only redesign pass against the active reference direction
+  - any further work would now be a polish round rather than an unfinished core refresh step

@@ -1,0 +1,27 @@
+<section class="workspace-header <%= local_assigns[:classes] %>">
+  <div class="workspace-header-main">
+    <% if local_assigns[:eyebrow].present? %>
+      <p class="eyebrow"><%= eyebrow %></p>
+    <% end %>
+
+    <h1><%= title %></h1>
+
+    <% if local_assigns[:description].present? %>
+      <p class="page-copy workspace-header-copy"><%= description %></p>
+    <% end %>
+
+    <% if local_assigns[:meta_items].present? %>
+      <div class="workspace-header-meta">
+        <% meta_items.each do |item| %>
+          <span class="workspace-header-meta-item"><%= item %></span>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <% if local_assigns[:actions].present? %>
+    <div class="workspace-header-actions">
+      <%= safe_join(actions) %>
+    </div>
+  <% end %>
+</section>

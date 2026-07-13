@@ -1,9 +1,10 @@
 module Assistant
   class LocalAnswerService < ApplicationService
-    def initialize(repository:, question:, chunks:)
+    def initialize(repository:, question:, chunks:, conversation_context: nil)
       @repository = repository
       @question = question
       @chunks = chunks
+      @conversation_context = conversation_context || {}
     end
 
     def call
@@ -19,7 +20,7 @@ module Assistant
 
     private
 
-    attr_reader :repository, :question, :chunks
+    attr_reader :repository, :question, :chunks, :conversation_context
 
     def build_answer
       return "No relevant indexed context was found for this repository yet." if chunks.empty?
@@ -27,6 +28,13 @@ module Assistant
       lines = []
       lines << "Repository: #{repository.name}"
       lines << "Question: #{question}"
+
+      if conversation_context[:prompt_transcript].present? && conversation_context[:prompt_transcript] != "No prior conversation context."
+        lines << "Recent conversation context:"
+        lines << conversation_context[:prompt_transcript]
+        lines << ""
+      end
+
       lines << ""
       lines << "Most relevant indexed context:"
 

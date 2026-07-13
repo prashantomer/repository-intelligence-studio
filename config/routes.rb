@@ -1,4 +1,4 @@
-require 'sidekiq/web'
+require "sidekiq/web"
 
 Rails.application.routes.draw do
   mount ActionCable.server => "/cable"
@@ -7,7 +7,7 @@ Rails.application.routes.draw do
   Sidekiq::Web.use Rack::Auth::Basic do |username, password|
     username == "admin" && password == "sidekiq"
   end
-  mount Sidekiq::Web => '/sidekiq'
+  mount Sidekiq::Web => "/sidekiq"
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
@@ -21,10 +21,13 @@ Rails.application.routes.draw do
 
   root "repositories#index"
   resource :settings, only: %i[edit update]
+  resources :provider_call_logs, only: :index
+  resources :repository_deletion_logs, only: :index
 
-  resources :repositories, only: %i[index new create show edit update] do
+  resources :repositories, only: %i[index new create show edit update destroy] do
     post :resync, on: :member
     get :search, on: :member
+    get :impact, on: :member
     get :assistant, on: :member
     post :ask, on: :member
   end

@@ -1,0 +1,8 @@
+<div class="metric-row">
+  <% metrics.each do |metric| %>
+    <article class="metric-card">
+      <span class="metric-card-value"><%= metric[:value] %></span>
+      <span class="metric-card-label"><%= metric[:label] %></span>
+    </article>
+  <% end %>
+</div>
