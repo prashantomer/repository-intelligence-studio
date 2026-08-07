@@ -24,7 +24,7 @@ gem "jbuilder"
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 
 gem "pgvector"
-gem "redis", "~> 5.0"
+gem "redis", "~> 6.0"
 gem "sidekiq"
 
 # Reduces boot times through caching; required in config/boot.rb
