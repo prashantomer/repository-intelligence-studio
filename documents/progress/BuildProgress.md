@@ -4,9 +4,108 @@
 
 - Name: `Engineering Knowledge Assistant`
 - Build mode: step-by-step with review after each step
-- Active scope: public repositories, repository-scoped assistant, single tracked branch per repository, project-agnostic repository support
+- Active scope: public repositories, repository-scoped assistant, single tracked branch per repository, project-agnostic repository support, hard delete with deletion logs, Turbo-driven workspaces
 
 ## Progress Log
+
+### Step 49 — Assistant Turbo rendering cleanup
+
+- Status: `completed`
+- Goal:
+  - reduce brittleness in the async assistant UI path without changing behavior
+  - keep the uncommitted assistant work limited to meaningful repository-Q&A improvements only
+- Output:
+  - replaced positional Turbo rendering in `ask.turbo_stream.erb` with explicit `@user_message` and `@assistant_message`
+  - updated the controller ask flow to expose those explicit message objects for stream rendering
+  - removed duplicate answer string construction in structured and local answer services
+  - preserved the lighter assistant chat-body partial structure introduced for collection rendering
+- Validation:
+  - `ruby -c` passed for the updated controller and assistant service files
+- Notes:
+  - this is a cleanup step, not a product-surface change
+  - it makes future assistant iteration safer because Turbo appends no longer rely on array position assumptions
+
+### Step 48 — Assistant structured and flow-aware answer paths
+
+- Status: `completed`
+- Goal:
+  - stop routing every repository question through the same generic retrieval-and-generate path
+  - improve narrow inventory prompts and sequence/flow questions before broader assistant quality tuning
+- Output:
+  - added `Assistant::StructuredAnswerService` for deterministic inventory-style prompts such as:
+    - `list all services`
+    - `show controllers`
+    - `what jobs exist`
+  - added scoped-question exclusion rules so prompts containing `flow`, `involved`, `chunking`, `impact`, `how`, or similar qualifiers do not collapse into generic inventory listings
+  - added `Assistant::FlowAnswerService` to gather ordered entities, relationships, file paths, and citations for flow/sequence style questions
+  - extended provider/local answer services to accept structured context, citation overrides, and extra response instructions
+  - updated assistant answer generation to try:
+    - deterministic structured inventory answers first
+    - flow-aware structured prompting second
+    - generic semantic retrieval + provider generation last
+- Validation:
+  - `ruby -c` passed for the new and updated assistant service files
+- Notes:
+  - this does not make the assistant fully deterministic; it adds narrower evidence-first paths where the question type is recognizably structured
+  - broader route/API enumeration still needs deeper structured answer coverage
+
+### Step 47 — Search relevance and snippet retrieval tightening
+
+- Status: `completed`
+- Goal:
+  - make repository search behave more like code search when the user enters a concrete symbol or method
+  - reduce false “no results” cases and poor one-line previews
+- Output:
+  - hardened search result ranking so exact in-chunk occurrences can surface even when the token appears late in a line
+  - added explicit line-hit extraction and scoring on top of semantic retrieval output
+  - expanded result previews from one-line fragments to snippet-style context windows around the matched line
+  - moved semantic search to Turbo-driven in-place refresh on the current workspace
+  - reshaped the search workspace to prioritize query + results in the main area with compact scope guidance nearby
+- Notes:
+  - semantic similarity remains part of ranking, but exact symbol presence is now given stronger weight for repository code-search use cases
+  - further weighting/refinement is still needed for high-confidence developer-code retrieval
+
+### Step 46 — Single topbar and page-aware action cleanup
+
+- Status: `completed`
+- Goal:
+  - remove duplicate navigation noise from the header area
+  - keep one shared topbar whose actions adjust by page context instead of repeating sidebar links
+- Output:
+  - consolidated the application frame to one common topbar
+  - removed redundant global navigation buttons from the topbar where sidebar navigation already owns that role
+  - kept page-local actions such as repository config, re-sync, history/help, and destructive actions in page context only
+- Notes:
+  - this change is visual/structural; backend routes and behaviors stay the same
+
+### Step 45 — Repository details modal/action consolidation
+
+- Status: `completed`
+- Goal:
+  - declutter the repository details page while preserving operational visibility
+  - move secondary operational history into on-demand views instead of stacking everything inline
+- Output:
+  - removed the inline dependency-graph summary block from repository details
+  - moved `Audit Log` and `Recent Ingestions` into popup-based views triggered from topbar actions
+  - restored `Latest Ingestion` as an inline primary card on the repository page
+  - added an explicit repository stats/counts block to the repository details workspace
+  - refined popup layout, padding, and scroll behavior for ingestion-history tables
+- Notes:
+  - the repository details page now focuses on current repository state; deeper history stays accessible without dominating the page
+
+### Step 44 — Hard delete repository UX completion
+
+- Status: `completed`
+- Goal:
+  - finish the user-facing side of hard delete after the deletion service foundation landed
+  - keep deletion operationally clear but non-funky
+- Output:
+  - added repository delete action into the repository workspace with explicit destructive confirmation
+  - simplified the deletion-log surface so it behaves as a plain operational history view
+  - aligned deletion logs with the shared workspace UI while retaining the minimal one-row-per-deleted-repository contract
+- Notes:
+  - delete remains a hard delete only; there is no restore/archive flow
+  - re-adding the same source repository later still creates a fresh repository lifecycle
 
 ### Step 24 — Impact analyzer drill-down tables
 
