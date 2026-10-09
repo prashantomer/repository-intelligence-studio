@@ -7,11 +7,15 @@ module Assistant
       Cite files and line ranges inline when possible.
     PROMPT
 
-    def initialize(repository:, question:, chunks:, conversation_context: nil)
+    def initialize(repository:, question:, chunks:, conversation_context: nil, context_override: nil, citations_override: nil, extra_instructions: nil, request_metadata_override: nil)
       @repository = repository
       @question = question
       @chunks = chunks
       @conversation_context = conversation_context || {}
+      @context_override = context_override
+      @citations_override = citations_override
+      @extra_instructions = Array(extra_instructions)
+      @request_metadata_override = request_metadata_override || {}
     end
 
     def call
@@ -53,7 +57,7 @@ module Assistant
 
     private
 
-    attr_reader :repository, :question, :chunks, :conversation_context
+    attr_reader :repository, :question, :chunks, :conversation_context, :context_override, :citations_override, :extra_instructions, :request_metadata_override
 
     def prompt_body
       <<~PROMPT
@@ -68,12 +72,13 @@ module Assistant
         #{conversation_context.fetch(:retrieval_query, question)}
 
         Indexed repository context:
-        #{ContextFormatter.call(chunks:)}
+        #{context_override.presence || ContextFormatter.call(chunks:)}
 
         Instructions:
         - Use recent conversation only to resolve follow-up references.
         - Use indexed repository context as the source of truth.
         - If the thread refers to something not supported by the retrieved context, say that directly.
+        #{extra_instruction_block}
       PROMPT
     end
 
@@ -116,6 +121,8 @@ module Assistant
     end
 
     def build_citations
+      return citations_override if citations_override.present?
+
       chunks.first(5).map do |chunk|
         {
           path: chunk.code_file.path,
@@ -148,7 +155,7 @@ module Assistant
           recent_message_count: conversation_context.fetch(:recent_messages, []).size,
           chunk_count: chunks.size,
           top_paths: chunks.first(5).map { |chunk| chunk.code_file.path }
-        },
+        }.merge(request_metadata_override),
         response_metadata: {
           response_keys: response_payload.respond_to?(:keys) ? response_payload.keys : [],
           answer_chars: answer.to_s.length,
@@ -177,6 +184,12 @@ module Assistant
 
     def current_time_ms
       Process.clock_gettime(Process::CLOCK_MONOTONIC, :millisecond)
+    end
+
+    def extra_instruction_block
+      return "" if extra_instructions.empty?
+
+      extra_instructions.map { |instruction| "- #{instruction}" }.join("\n")
     end
   end
 end

@@ -19,6 +19,37 @@ module Assistant
 
       conversation_context = conversation_context_result.data
 
+      structured_answer_result = Assistant::StructuredAnswerService.call(
+        repository:,
+        question:
+      )
+      return structured_answer_result if structured_answer_result.failure?
+
+      if structured_answer_result.data.present?
+        return ApplicationResult.success(
+          data: {
+            payload: structured_answer_result.data,
+            retrieved_chunks: []
+          }
+        )
+      end
+
+      flow_answer_result = Assistant::FlowAnswerService.call(
+        repository:,
+        question:,
+        conversation_context:
+      )
+      return flow_answer_result if flow_answer_result.failure?
+
+      if flow_answer_result.data.present?
+        return ApplicationResult.success(
+          data: {
+            payload: flow_answer_result.data,
+            retrieved_chunks: []
+          }
+        )
+      end
+
       retrieval_result = Retrieval::SemanticSearchService.call(
         repository:,
         query: conversation_context[:retrieval_query]
