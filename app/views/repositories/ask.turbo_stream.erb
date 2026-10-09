@@ -1,5 +1,11 @@
-<%= turbo_stream.replace "assistant-chat-body" do %>
-  <%= render "repositories/assistant/chat_body", repository: @repository, messages: @messages %>
+<%= turbo_stream.remove "assistant-empty-state" %>
+
+<%= turbo_stream.append "assistant-message-list" do %>
+  <%= render "repositories/assistant/message", message: @user_message, repository: @repository %>
+<% end %>
+
+<%= turbo_stream.append "assistant-message-list" do %>
+  <%= render "repositories/assistant/message", message: @assistant_message, repository: @repository %>
 <% end %>
 
 <%= turbo_stream.replace "assistant-composer" do %>

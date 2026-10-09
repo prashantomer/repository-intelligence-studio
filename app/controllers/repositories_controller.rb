@@ -103,6 +103,8 @@ class RepositoriesController < ApplicationController
 
     @conversation = result.success? ? result.data.fetch(:conversation) : conversation
     @messages = @conversation&.messages&.order(created_at: :asc) || []
+    @user_message = result.data[:user_message] if result.success?
+    @assistant_message = result.data[:assistant_message] if result.success?
 
     respond_to do |format|
       if result.success?
