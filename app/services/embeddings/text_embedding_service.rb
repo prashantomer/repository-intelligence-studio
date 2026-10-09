@@ -39,11 +39,30 @@ module Embeddings
       client = Ai::ProviderFactory.for_embeddings(repository)
       return ApplicationResult.failure(error: "Unsupported embedding provider") if client.blank?
 
+      started_at = current_time_ms
       result = client.embedding(model: repository.embedding_model, text:)
-      return contextual_failure(result.error) if result.failure?
+      latency_ms = current_time_ms - started_at
+
+      if result.failure?
+        record_provider_call(status: :failed, latency_ms:, error_message: result.error)
+        return contextual_failure(result.error)
+      end
 
       embedding = normalize_remote_embedding(result.data)
-      return contextual_failure("Embedding response was empty") if embedding.blank?
+      if embedding.blank?
+        record_provider_call(status: :failed, latency_ms:, response_payload: result.data, error_message: "Embedding response was empty")
+        return contextual_failure("Embedding response was empty")
+      end
+
+      prompt_tokens, completion_tokens = extract_usage(result.data)
+      record_provider_call(
+        status: :success,
+        latency_ms:,
+        prompt_tokens:,
+        completion_tokens:,
+        response_payload: result.data,
+        embedding:
+      )
 
       ApplicationResult.success(data: embedding)
     end
@@ -61,6 +80,55 @@ module Embeddings
       ApplicationResult.failure(
         error: "Embedding provider #{repository.embedding_provider} failed for model #{repository.embedding_model}: #{error_message}"
       )
+    end
+
+    def extract_usage(payload)
+      case repository.embedding_provider
+      when Repository::EMBEDDING_PROVIDERS[:openai]
+        usage = payload.fetch("usage", {})
+        [usage["prompt_tokens"].to_i, 0]
+      else
+        [0, 0]
+      end
+    end
+
+    def record_provider_call(status:, latency_ms:, prompt_tokens: 0, completion_tokens: 0, response_payload: {}, embedding: nil, error_message: nil)
+      Ai::ProviderCallLogRecorder.call(
+        repository:,
+        user: repository.user,
+        provider: repository.embedding_provider,
+        operation_type: :embedding,
+        model: repository.embedding_model,
+        endpoint: embedding_endpoint,
+        request_metadata: {
+          input_chars: text.to_s.length,
+          input_preview: text.to_s.squish.truncate(220)
+        },
+        response_metadata: {
+          response_keys: response_payload.respond_to?(:keys) ? response_payload.keys : [],
+          dimensions: embedding&.size
+        },
+        prompt_tokens:,
+        completion_tokens:,
+        latency_ms:,
+        status:,
+        error_message:
+      )
+    end
+
+    def embedding_endpoint
+      case repository.embedding_provider
+      when Repository::EMBEDDING_PROVIDERS[:openai]
+        "/v1/embeddings"
+      when Repository::EMBEDDING_PROVIDERS[:ollama]
+        "/api/embed"
+      else
+        "local"
+      end
+    end
+
+    def current_time_ms
+      Process.clock_gettime(Process::CLOCK_MONOTONIC, :millisecond)
     end
   end
 end

@@ -1,32 +1,45 @@
 module Assistant
   class LocalAnswerService < ApplicationService
-    def initialize(repository:, question:, chunks:)
+    def initialize(repository:, question:, chunks:, conversation_context: nil, context_override: nil, citations_override: nil)
       @repository = repository
       @question = question
       @chunks = chunks
+      @conversation_context = conversation_context || {}
+      @context_override = context_override
+      @citations_override = citations_override
     end
 
     def call
+      answer = build_answer
+
       ApplicationResult.success(
         data: {
-          answer: build_answer,
+          answer:,
           citations: build_citations,
           prompt_tokens: approximate_tokens(question),
-          completion_tokens: approximate_tokens(build_answer)
+          completion_tokens: approximate_tokens(answer)
         }
       )
     end
 
     private
 
-    attr_reader :repository, :question, :chunks
+    attr_reader :repository, :question, :chunks, :conversation_context, :context_override, :citations_override
 
     def build_answer
+      return build_context_override_answer if context_override.present?
       return "No relevant indexed context was found for this repository yet." if chunks.empty?
 
       lines = []
       lines << "Repository: #{repository.name}"
       lines << "Question: #{question}"
+
+      if conversation_context[:prompt_transcript].present? && conversation_context[:prompt_transcript] != "No prior conversation context."
+        lines << "Recent conversation context:"
+        lines << conversation_context[:prompt_transcript]
+        lines << ""
+      end
+
       lines << ""
       lines << "Most relevant indexed context:"
 
@@ -55,6 +68,8 @@ module Assistant
     end
 
     def build_citations
+      return citations_override if citations_override.present?
+
       chunks.first(5).map do |chunk|
         {
           path: chunk.code_file.path,
@@ -68,6 +83,16 @@ module Assistant
 
     def approximate_tokens(text)
       (text.to_s.length / 4.0).ceil
+    end
+
+    def build_context_override_answer
+      lines = []
+      lines << "Repository: #{repository.name}"
+      lines << "Question: #{question}"
+      lines << ""
+      lines << "Structured repository evidence:"
+      lines << context_override
+      lines.join("\n")
     end
   end
 end

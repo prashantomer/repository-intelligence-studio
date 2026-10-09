@@ -1,5 +1,6 @@
 require "digest"
 require "pathname"
+require "yaml"
 
 module Codebase
   class FileInventoryService < ApplicationService
@@ -12,14 +13,6 @@ module Codebase
       coverage
       storage
     ].freeze
-
-    LANGUAGE_MAP = {
-      ".rb" => "ruby",
-      ".js" => "javascript",
-      ".jsx" => "javascript",
-      ".ts" => "typescript",
-      ".tsx" => "typescript"
-    }.freeze
 
     def initialize(repository:, root_path:)
       @repository = repository
@@ -61,7 +54,23 @@ module Codebase
     end
 
     def detect_language(path)
-      LANGUAGE_MAP[path.extname]
+      filename_map[path.basename.to_s] || extension_map[path.extname.downcase]
+    end
+
+    def extension_map
+      language_config.fetch("extensions")
+    end
+
+    def filename_map
+      language_config.fetch("filenames")
+    end
+
+    def language_config
+      self.class.language_config
+    end
+
+    def self.language_config
+      @language_config ||= YAML.load_file(Rails.root.join("config", "language_map.yml")).deep_stringify_keys.freeze
     end
   end
 end

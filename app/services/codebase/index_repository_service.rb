@@ -15,6 +15,7 @@ module Codebase
         entities = extract_entities_for_files!(file_result.data)
         routes = RoutesExtractorService.call(repository:, root_path:).data
         relationships = EntityRelationshipExtractorService.call(repository:, root_path:).data
+        dependency_edges = DependencyEdgeBuilderService.call(repository:).data
         chunks = ChunkingService.call(repository:, root_path:).data
 
         ApplicationResult.success(
@@ -23,6 +24,7 @@ module Codebase
             entities_count: entities.size,
             routes_count: routes.size,
             relationships_count: relationships.size,
+            dependency_edges_count: dependency_edges.size,
             chunks_count: chunks.size
           }
         )
@@ -38,6 +40,7 @@ module Codebase
     def purge_existing_index!
       # Delete in order: leaf → root to respect FK dependencies
       repository.repository_routes.delete_all
+      repository.dependency_edges.delete_all
       repository.code_chunks.delete_all
       repository.entity_relationships.delete_all
       repository.entities.delete_all

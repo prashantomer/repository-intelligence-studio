@@ -5,15 +5,15 @@
     <div class="assistant-composer-box">
       <div class="field assistant-composer-field">
         <%= form.text_area :question,
-                           rows: 4,
-                           placeholder: "Ask about architecture, data flow, routes, models, Sidekiq jobs, embeddings, or impact of a code change...",
+                           rows: 3,
+                           placeholder: "Ask about flow, architecture, jobs, routes, embeddings, or impact...",
                            class: "assistant-composer-input",
                            data: { assistant_form_target: "input" } %>
-        <span class="field-hint">Responses are grounded to the latest ingested snapshot for this repository.</span>
+        <span class="field-hint">Grounded to the latest ingested snapshot and recent thread context.</span>
       </div>
 
       <div class="assistant-composer-actions">
-        <span class="assistant-composer-hint">Natural language works best. Be specific when you want file-level detail.</span>
+        <span class="assistant-composer-hint">Follow-up questions reuse recent thread context.</span>
         <%= form.submit "Send", class: "button button-primary assistant-send-button", data: { assistant_form_target: "submit" } %>
       </div>
     </div>

@@ -6,6 +6,41 @@ Build a **Rails 8 monolith** that ingests GitHub repositories of different proje
 
 The implementation should be done in **sequential phases**, where each phase leaves the system in a usable and testable state. The plan below is structured so that later capabilities depend on stable primitives built earlier, rather than introducing AI features before repository intelligence is reliable.
 
+## 1.1 Current implementation snapshot
+
+The plan below remains the target architecture, but the current build has already moved materially beyond the early MVP baseline.
+
+### Implemented now
+
+- public GitHub repository registration and tracked-branch ingestion
+- manual `Re-sync` flow with force re-index behavior
+- temporary clone workspace cleanup after ingestion
+- file indexing, chunking, embeddings, and repository-scoped semantic retrieval
+- centralized per-user AI configuration with provider/model selection
+- repository assistant with:
+  - persisted conversations/messages
+  - async queued responses
+  - Turbo-driven live updates
+  - conversation-aware follow-up context
+  - provider call logging
+  - structured inventory answers for narrow questions like `list all services`
+  - flow-oriented answer shaping for sequence/call-path questions
+- dependency graph foundation and repository-scoped impact analyzer
+- saved impact reports, help/history modals, and provider-backed narration fallback
+- hard-delete repository flow with persistent deletion logs
+- documentation reorganization under `documents/`
+- broad UI refresh across repositories, details, assistant, search, settings, logs, and impact analyzer
+
+### Still open / still worth improving
+
+- stronger non-Rails / non-Ruby structured extraction depth
+- better semantic-search ranking and mixed keyword + vector retrieval weighting
+- broader structured answer coverage beyond inventory and flow prompts
+- deeper assistant response quality for route/API/listing questions
+- automatic re-ingestion/webhook flow
+- PR review assistant
+- export/report generation polish
+
 ---
 
 ## 2. Delivery Strategy
@@ -423,6 +458,10 @@ Add:
 9. Defer realtime streaming/tailing of provider logs to a later enhancement after the database-backed audit view is stable.
 10. Enforce repository-scoped retrieval on every assistant query.
 11. Answer from the latest successful ingested snapshot for the selected tracked branch.
+12. Preserve recent thread context for follow-up questions, but keep retrieved repository evidence as source of truth.
+13. Support async queued answer generation with pending-message replacement in the UI.
+14. Add structured answer paths for narrow deterministic prompts before falling back to provider generation.
+15. Add flow/sequence-oriented prompt shaping so AI responses can narrate ordered modules/classes with file paths when graph/index evidence supports it.
 
 ### Why this phase comes after retrieval
 
@@ -436,6 +475,8 @@ The assistant should be the consumer of repository intelligence, not the produce
 - provider calls are auditable in the database with usage and estimated cost details
 - assistant stays scoped to a selected repository
 - assistant does not require a live local clone after ingestion completes
+- follow-up questions can reuse recent thread context without breaking repository scope
+- deterministic/structured answer paths are used where the question type is narrow enough to avoid unnecessary AI generation
 
 ---
 
@@ -468,6 +509,42 @@ Add:
 1. Normalize extracted relationships into graph edges.
 2. Implement graph traversal queries:
    - upstream dependencies
+   - downstream dependents
+   - related jobs/routes/files
+3. Add natural-language target interpretation so users can ask impact questions without exact identifier formatting.
+4. Persist impact reports for later review and drill-down reuse.
+5. Add provider-backed review guidance on top of deterministic graph/retrieval evidence with safe local fallback.
+6. Add a dedicated impact workspace with saved-report history, help text, and Turbo-driven in-place updates.
+7. Keep impact analysis entity-centric in MVP; broad conceptual prompts should resolve to a concrete code target before analysis proceeds.
+
+---
+
+## Phase 5.5 — Repository Lifecycle Admin Operations
+
+### Goal
+
+Make repository lifecycle management operationally safe after ingestion and analysis data begin to accumulate.
+
+### Tasks
+
+1. Add hard-delete repository capability.
+2. Remove all repository-scoped records:
+   - ingestions
+   - files/chunks/entities/relationships
+   - routes and dependency edges
+   - conversations/messages
+   - impact reports
+   - provider logs
+3. Clean temporary repository workspaces from disk.
+4. Persist one deletion-log record per deleted repository id that survives hard delete.
+5. Expose read-only deletion-log history in the UI.
+
+### Acceptance criteria
+
+- deleting a repository removes repository-scoped indexed and conversational data
+- deletion does not leave stale workspace directories behind
+- a surviving deletion snapshot explains what was removed
+- re-adding the same source repository later is allowed and treated as a new lifecycle
    - downstream dependents
    - related files
    - routes touching entity
@@ -586,11 +663,14 @@ Use this execution order at the ticket level.
 17. Conversation UI and answer persistence
 18. Dependency graph normalization
 19. Impact analysis engine
-20. Architecture explorer UI
-21. Documentation generation
-22. Export/download support
-23. Observability and hardening pass
-24. Demo data and capstone script
+20. Assistant async/Turbo polish and thread context
+21. Structured answer paths and flow-aware prompting
+22. Architecture explorer UI
+23. Hard delete and deletion-log workflow
+24. Documentation generation
+25. Export/download support
+26. Observability and hardening pass
+27. Demo data and capstone script
 
 This order is intentional. It prevents building UI-heavy or AI-heavy features on top of unstable ingestion and weak repository facts.
 

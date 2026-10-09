@@ -10,33 +10,55 @@
     </section>
   <% end %>
 
-  <div class="form-grid two-up">
-    <div class="field">
-      <%= form.label :name %>
-      <%= form.text_field :name, required: true, placeholder: "engineering-knowledge-assistant" %>
-    </div>
+  <div class="settings-stack repository-form-stack">
+    <section class="card card-muted compact-card">
+      <div class="section-title">
+        <div>
+          <h2>Repository Source</h2>
+          <p class="page-copy">Core repository identification and source location.</p>
+        </div>
+      </div>
 
-    <div class="field">
-      <%= form.label :github_url, "GitHub URL" %>
-      <%= form.url_field :github_url, required: true, placeholder: "https://github.com/owner/repository" %>
-    </div>
+      <div class="form-grid two-up">
+        <div class="field">
+          <%= form.label :name %>
+          <%= form.text_field :name, required: true, placeholder: "engineering-knowledge-assistant" %>
+        </div>
 
-    <div class="field">
-      <%= form.label :default_branch %>
-      <%= form.text_field :default_branch, placeholder: "main" %>
-    </div>
+        <div class="field">
+          <%= form.label :github_url, "GitHub URL" %>
+          <%= form.url_field :github_url, required: true, placeholder: "https://github.com/owner/repository" %>
+        </div>
+      </div>
+    </section>
 
-    <div class="field">
-      <%= form.label :tracked_branch %>
-      <%= form.text_field :tracked_branch, placeholder: "Leave blank to use default branch" %>
-    </div>
+    <section class="card card-muted compact-card">
+      <div class="section-title">
+        <div>
+          <h2>Branch Tracking</h2>
+          <p class="page-copy">Choose the tracked branch snapshot for ingestion and analysis.</p>
+        </div>
+      </div>
+
+      <div class="form-grid two-up">
+        <div class="field">
+          <%= form.label :default_branch %>
+          <%= form.text_field :default_branch, placeholder: "main" %>
+        </div>
+
+        <div class="field">
+          <%= form.label :tracked_branch %>
+          <%= form.text_field :tracked_branch, placeholder: "Leave blank to use default branch" %>
+        </div>
+      </div>
+    </section>
   </div>
 
   <section class="card card-muted">
     <div class="section-title">
       <div>
         <h2>Inherited AI Settings</h2>
-        <p class="page-copy">Assistant and embedding configuration are now managed centrally for the current user.</p>
+        <p class="page-copy">Managed centrally for the current user.</p>
       </div>
       <%= link_to "Manage AI Settings", edit_settings_path, class: "button button-secondary" %>
     </div>

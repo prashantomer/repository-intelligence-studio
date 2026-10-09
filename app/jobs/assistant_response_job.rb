@@ -6,7 +6,12 @@ class AssistantResponseJob < ApplicationJob
     conversation = repository.conversations.find(conversation_id)
     assistant_message = conversation.messages.find(assistant_message_id)
 
-    result = Assistant::GenerateAnswerService.call(repository:, question:)
+    result = Assistant::GenerateAnswerService.call(
+      repository:,
+      question:,
+      conversation:,
+      pending_message: assistant_message
+    )
 
     if result.success?
       payload = result.data.fetch(:payload)

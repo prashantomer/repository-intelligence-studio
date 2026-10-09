@@ -36,7 +36,7 @@
             <div class="assistant-typing-line assistant-typing-line-sm"></div>
           </div>
         <% else %>
-          <%= simple_format(message.content) %>
+          <%= render_assistant_message(message.content) %>
         <% end %>
       </div>
 

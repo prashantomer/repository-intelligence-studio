@@ -32,4 +32,30 @@ RSpec.describe "Repositories", type: :request do
       expect(repository.repository_ingestions.count).to eq(1)
     end
   end
+
+  describe "DELETE /repositories/:id" do
+    let!(:repository) do
+      Repository.create!(
+        user: User.order(:id).first_or_create!(name: "Default User", email: "default@example.local"),
+        name: "eka",
+        github_url: "https://github.com/example/delete-me",
+        default_branch: "main",
+        tracked_branch: "main",
+        status: :completed,
+        visibility: :public_repo,
+        provider: :github
+      )
+    end
+
+    it "deletes the repository and redirects to index" do
+      expect do
+        delete repository_path(repository)
+      end.to change(Repository, :count).by(-1)
+        .and change(RepositoryDeletionLog, :count).by(1)
+
+      expect(response).to redirect_to(repositories_path)
+      follow_redirect!
+      expect(response.body).to include("Repository deleted permanently")
+    end
+  end
 end
